@@ -121,55 +121,72 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _restoreBackup() async {
-    final backupContent = await pickTextFile();
+    String? backupContent;
+    try {
+      backupContent = await pickTextFile();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Backup konnte nicht gelesen werden.')),
+        );
+      }
+      return;
+    }
+
     if (backupContent == null) {
       return;
     }
 
     try {
       BargeldBackup.fromJson(jsonDecode(backupContent));
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('Backup wiederherstellen?'),
-            content: const Text(
-              'Die vorhandenen Buchungen werden durch die Daten aus dem Backup ersetzt.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Abbrechen'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Wiederherstellen'),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (confirmed != true) {
-        return;
-      }
-
-      final restoredTransactions = BargeldBackupManager.restoreTransactions(
-        currentTransactions: [..._transactions],
-        backupContent: backupContent,
-      );
-      await _persistTransactions(restoredTransactions);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Backup wurde wiederhergestellt.')),
-        );
-      }
     } on FormatException catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(error.message)),
         );
       }
+      return;
+    }
+
+    if (!mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Backup wiederherstellen?'),
+          content: const Text(
+            'Die vorhandenen Buchungen werden durch die Daten aus dem Backup ersetzt.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Wiederherstellen'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    if (!mounted) return;
+
+    final restoredTransactions = BargeldBackupManager.restoreTransactions(
+      currentTransactions: [..._transactions],
+      backupContent: backupContent,
+    );
+    await _persistTransactions(restoredTransactions);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup wurde wiederhergestellt.')),
+      );
     }
   }
 

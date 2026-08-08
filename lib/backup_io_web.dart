@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:html' as html;
 
@@ -14,18 +15,50 @@ Future<void> downloadTextFileWeb(List<int> bytes, String fileName) async {
 }
 
 Future<String?> pickTextFileWeb() async {
+  final completer = Completer<String?>();
   final input = html.FileUploadInputElement()..accept = '.json,application/json';
-  input.click();
 
-  await Future<void>.delayed(const Duration(milliseconds: 200));
-
-  final file = input.files?.isEmpty ?? true ? null : input.files!.first;
-  if (file == null) {
-    return null;
+  void cleanup() {
+    input.remove();
   }
 
-  final reader = html.FileReader();
-  reader.readAsText(file);
-  await reader.onLoad.first;
-  return reader.result as String?;
+  void onChange(html.Event event) {
+    final files = input.files;
+    if (files == null || files.isEmpty) {
+      cleanup();
+      if (!completer.isCompleted) {
+        completer.complete(null);
+      }
+      return;
+    }
+
+    final file = files.first;
+    final reader = html.FileReader();
+    reader.onLoad.first.then((_) {
+      cleanup();
+      if (!completer.isCompleted) {
+        completer.complete(reader.result as String?);
+      }
+    });
+    reader.onError.first.then((event) {
+      cleanup();
+      if (!completer.isCompleted) {
+        completer.completeError(event);
+      }
+    });
+    reader.readAsText(file);
+  }
+
+  input.onChange.listen((event) => onChange(event));
+  input.onCancel.listen((_) {
+    cleanup();
+    if (!completer.isCompleted) {
+      completer.complete(null);
+    }
+  });
+
+  html.document.body!.append(input);
+  input.click();
+
+  return completer.future;
 }
