@@ -21,7 +21,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const BargeldApp());
 
-    expect(find.text('Bargeld'), findsOneWidget);
+    expect(find.text('BARGELD'), findsOneWidget);
     expect(find.text('Aktueller Bargeldbestand'), findsOneWidget);
     expect(find.text('0,00 €'), findsOneWidget);
     expect(find.text('Ausgabe erfassen'), findsOneWidget);

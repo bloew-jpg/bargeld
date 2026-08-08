@@ -604,96 +604,137 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F3),
+      backgroundColor: const Color(0xFFF6F2EA),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 430),
             child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    const Text(
-                      'Bargeld',
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'BARGELD',
                       style: TextStyle(
-                        fontSize: 34,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
+                        letterSpacing: 2.4,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF243128),
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'Aktueller Bargeldbestand',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey,
-                      ),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    key: const Key('balance-card'),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 24,
+                      horizontal: 20,
                     ),
-                    const SizedBox(height: 16),
-                    Container(
-                      key: const Key('balance-card'),
-                      padding: const EdgeInsets.symmetric(vertical: 34),
-                      decoration: BoxDecoration(
-                        color: _balanceColor,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Center(
-                        child: Text(
+                    decoration: BoxDecoration(
+                      color: _balanceColor,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 18,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Aktueller Bargeldbestand',
+                          style: TextStyle(
+                            fontSize: 13,
+                            letterSpacing: 1.1,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
                           euro(_bargeldbestand),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 34,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
+                            height: 1.1,
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _actionButton(
+                          icon: Icons.remove_circle_outline_rounded,
+                          label: 'Ausgabe erfassen',
+                          onPressed: ausgabeErfassen,
+                          isPrimary: true,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    _actionButton(
-                      icon: Icons.money_off,
-                      label: 'Ausgabe erfassen',
-                      onPressed: ausgabeErfassen,
-                    ),
-                    const SizedBox(height: 16),
-                    _actionButton(
-                      icon: Icons.account_balance_wallet,
-                      label: 'Bargeld erhalten',
-                      onPressed: bargeldErhalten,
-                    ),
-                    const SizedBox(height: 16),
-                    _actionButton(
-                      icon: Icons.bar_chart,
-                      label: 'Monatsübersicht',
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MonthlyOverviewPage(
-                              transactions: _transactions,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _actionButton(
-                      icon: Icons.receipt_long,
-                      label: 'Buchungen',
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TransactionsPage(
-                              transactions: _transactions,
-                              onEditTransaction: _editTransaction,
-                              onDeleteTransaction: _deleteTransaction,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _actionButton(
+                          icon: Icons.add_circle_outline_rounded,
+                          label: 'Bargeld erhalten',
+                          onPressed: bargeldErhalten,
+                          isPrimary: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _actionButton(
+                          icon: Icons.bar_chart_rounded,
+                          label: 'Monatsübersicht',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MonthlyOverviewPage(
+                                  transactions: _transactions,
+                                ),
+                              ),
+                            );
+                          },
+                          isPrimary: false,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _actionButton(
+                          icon: Icons.receipt_long_rounded,
+                          label: 'Buchungen',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TransactionsPage(
+                                  transactions: _transactions,
+                                  onEditTransaction: _editTransaction,
+                                  onDeleteTransaction: _deleteTransaction,
+                                ),
+                              ),
+                            );
+                          },
+                          isPrimary: false,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
@@ -706,32 +747,65 @@ class _HomePageState extends State<HomePage> {
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
+    required bool isPrimary,
   }) {
-    return SizedBox(
-      height: 92,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF35933E),
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Icon(icon, size: 30),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(fontSize: 20),
+    final backgroundColor = isPrimary
+        ? const Color(0xFFF9F5EE)
+        : const Color(0xFFFCFAF6);
+    final borderColor = isPrimary
+        ? const Color(0xFFCAD9C8)
+        : const Color(0xFFE7E1D6);
+    final iconColor = const Color(0xFF3E6A50);
+    final textColor = const Color(0xFF243128);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          height: isPrimary ? 92 : 74,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: borderColor, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  size: 22,
+                  color: iconColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: isPrimary ? 14 : 13,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
