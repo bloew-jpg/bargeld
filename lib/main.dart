@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'backup_io.dart';
+
 const List<String> expenseCategories = [
   'Grundversorgung',
   'Gesundheit',
@@ -84,6 +86,91 @@ class _HomePageState extends State<HomePage> {
     final prefs = await SharedPreferences.getInstance();
     final payload = _transactions.map((tx) => jsonEncode(tx.toJson())).toList();
     await prefs.setStringList('transactions', payload);
+  }
+
+  Future<void> _persistTransactions(List<KaufTransaction> transactions) async {
+    _transactions
+      ..clear()
+      ..addAll(transactions);
+    await _saveTransactions();
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _exportBackup() async {
+    final backup = BargeldBackup(
+      formatVersion: BargeldBackup.currentFormatVersion,
+      createdAt: DateTime.now().toUtc().toIso8601String(),
+      transactions: [..._transactions],
+    );
+
+    final payload = jsonEncode(backup.toJson());
+    final fileName = 'bargeld-backup-${DateTime.now().toLocal().toString().split(' ')[0]}.json';
+
+    if (!mounted) return;
+
+    final bytes = utf8.encode(payload);
+    await downloadTextFile(bytes, fileName);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup wurde erstellt.')),
+      );
+    }
+  }
+
+  Future<void> _restoreBackup() async {
+    final backupContent = await pickTextFile();
+    if (backupContent == null) {
+      return;
+    }
+
+    try {
+      BargeldBackup.fromJson(jsonDecode(backupContent));
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Backup wiederherstellen?'),
+            content: const Text(
+              'Die vorhandenen Buchungen werden durch die Daten aus dem Backup ersetzt.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Abbrechen'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Wiederherstellen'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirmed != true) {
+        return;
+      }
+
+      final restoredTransactions = BargeldBackupManager.restoreTransactions(
+        currentTransactions: [..._transactions],
+        backupContent: backupContent,
+      );
+      await _persistTransactions(restoredTransactions);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Backup wurde wiederhergestellt.')),
+        );
+      }
+    } on FormatException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message)),
+        );
+      }
+    }
   }
 
   double get _bargeldbestand {
@@ -743,6 +830,8 @@ class _HomePageState extends State<HomePage> {
                                   transactions: _transactions,
                                   onEditTransaction: _editTransaction,
                                   onDeleteTransaction: _deleteTransaction,
+                                  onBackupCreate: _exportBackup,
+                                  onBackupRestore: _restoreBackup,
                                 ),
                               ),
                             );
@@ -839,11 +928,15 @@ class TransactionsPage extends StatefulWidget {
     required this.transactions,
     required this.onEditTransaction,
     required this.onDeleteTransaction,
+    required this.onBackupCreate,
+    required this.onBackupRestore,
   });
 
   final List<KaufTransaction> transactions;
   final Future<void> Function(KaufTransaction transaction) onEditTransaction;
   final Future<void> Function(KaufTransaction transaction) onDeleteTransaction;
+  final Future<void> Function() onBackupCreate;
+  final Future<void> Function() onBackupRestore;
 
   @override
   State<TransactionsPage> createState() => _TransactionsPageState();
@@ -891,6 +984,28 @@ class _TransactionsPageState extends State<TransactionsPage> {
         foregroundColor: const Color(0xFF243128),
         elevation: 0,
         scrolledUnderElevation: 0,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) async {
+              if (value == 'backup_create') {
+                await widget.onBackupCreate();
+              } else if (value == 'backup_restore') {
+                await widget.onBackupRestore();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'backup_create',
+                child: Text('Backup erstellen'),
+              ),
+              const PopupMenuItem(
+                value: 'backup_restore',
+                child: Text('Backup wiederherstellen'),
+              ),
+            ],
+          ),
+        ],
       ),
       backgroundColor: const Color(0xFFF6F2EA),
       body: SafeArea(
@@ -1568,6 +1683,72 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
         ],
       ),
     );
+  }
+}
+
+class BargeldBackup {
+  BargeldBackup({
+    required this.formatVersion,
+    required this.createdAt,
+    required this.transactions,
+  });
+
+  static const int currentFormatVersion = 1;
+
+  final int formatVersion;
+  final String createdAt;
+  final List<KaufTransaction> transactions;
+
+  factory BargeldBackup.fromJson(Map<String, dynamic> json) {
+    if (json['formatVersion'] != currentFormatVersion) {
+      throw const FormatException('Dieses Backup ist nicht kompatibel.');
+    }
+
+    if (json['createdAt'] is! String || json['transactions'] is! List) {
+      throw const FormatException('Das Backup ist ungültig.');
+    }
+
+    final transactions = (json['transactions'] as List)
+        .map((item) {
+          if (item is! Map<String, dynamic>) {
+            throw const FormatException('Das Backup enthält ungültige Einträge.');
+          }
+          return KaufTransaction.fromJson(item);
+        })
+        .toList();
+
+    return BargeldBackup(
+      formatVersion: json['formatVersion'] as int,
+      createdAt: json['createdAt'] as String,
+      transactions: transactions,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'formatVersion': formatVersion,
+      'createdAt': createdAt,
+      'transactions': transactions.map((tx) => tx.toJson()).toList(),
+    };
+  }
+}
+
+class BargeldBackupManager {
+  static List<KaufTransaction> restoreTransactions({
+    required List<KaufTransaction> currentTransactions,
+    required String? backupContent,
+  }) {
+    if (backupContent == null) {
+      return [...currentTransactions];
+    }
+
+    final decoded = jsonDecode(backupContent);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Das Backup ist ungültig.');
+    }
+
+    final backup = BargeldBackup.fromJson(decoded);
+    return [...backup.transactions];
   }
 }
 

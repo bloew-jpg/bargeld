@@ -5,6 +5,8 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -46,6 +48,122 @@ void main() {
     expect(find.text('Einnahme'), findsOneWidget);
     expect(find.text(currentMonthName()), findsOneWidget);
     expect(find.text('Buchungen'), findsOneWidget);
+  });
+
+  test('backup serialization round-trips transaction data', () {
+    final transaction = KaufTransaction(
+      id: 'tx-1',
+      type: TransactionType.expense,
+      amount: 12.5,
+      date: DateTime(2026, 8, 8),
+      note: 'Lunch',
+      category: 'Essen gehen',
+      createdAt: DateTime(2026, 8, 1),
+    );
+
+    final backup = BargeldBackup(
+      formatVersion: BargeldBackup.currentFormatVersion,
+      createdAt: '2026-08-08T12:00:00.000Z',
+      transactions: [transaction],
+    );
+
+    final json = backup.toJson();
+    expect(json['formatVersion'], BargeldBackup.currentFormatVersion);
+
+    final restoredBackup = BargeldBackup.fromJson(json);
+    expect(restoredBackup.transactions.single.id, 'tx-1');
+    expect(restoredBackup.transactions.single.type, TransactionType.expense);
+    expect(restoredBackup.transactions.single.amount, 12.5);
+    expect(restoredBackup.transactions.single.note, 'Lunch');
+    expect(restoredBackup.transactions.single.category, 'Essen gehen');
+  });
+
+  test('backup validation rejects incompatible payloads', () {
+    expect(
+      () => BargeldBackup.fromJson({'formatVersion': 2, 'createdAt': '2026-08-08', 'transactions': []}),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('successful restore replaces the current transaction list', () {
+    final existing = <KaufTransaction>[
+      KaufTransaction(
+        id: 'old',
+        type: TransactionType.withdrawal,
+        amount: 5,
+        date: DateTime(2026, 8, 1),
+        note: 'old',
+        category: null,
+        createdAt: DateTime(2026, 8, 1),
+      ),
+    ];
+
+    final backup = BargeldBackup(
+      formatVersion: BargeldBackup.currentFormatVersion,
+      createdAt: '2026-08-08T12:00:00.000Z',
+      transactions: [
+        KaufTransaction(
+          id: 'new',
+          type: TransactionType.cashReceived,
+          amount: 20,
+          date: DateTime(2026, 8, 2),
+          note: 'new',
+          category: null,
+          createdAt: DateTime(2026, 8, 2),
+        ),
+      ],
+    );
+
+    final restored = BargeldBackupManager.restoreTransactions(
+      currentTransactions: existing,
+      backupContent: jsonEncode(backup.toJson()),
+    );
+
+    expect(restored.single.id, 'new');
+    expect(restored.single.amount, 20);
+  });
+
+  test('invalid backup does not alter existing data', () {
+    final existing = <KaufTransaction>[
+      KaufTransaction(
+        id: 'old',
+        type: TransactionType.expense,
+        amount: 3,
+        date: DateTime(2026, 8, 3),
+        note: 'keep',
+        category: null,
+        createdAt: DateTime(2026, 8, 3),
+      ),
+    ];
+
+    expect(
+      () => BargeldBackupManager.restoreTransactions(
+        currentTransactions: existing,
+        backupContent: '{invalid json}',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('cancelled restore keeps the current transaction list', () {
+    final existing = <KaufTransaction>[
+      KaufTransaction(
+        id: 'old',
+        type: TransactionType.expense,
+        amount: 4,
+        date: DateTime(2026, 8, 4),
+        note: 'keep',
+        category: null,
+        createdAt: DateTime(2026, 8, 4),
+      ),
+    ];
+
+    final restored = BargeldBackupManager.restoreTransactions(
+      currentTransactions: existing,
+      backupContent: null,
+    );
+
+    expect(restored.single.id, 'old');
   });
 
   testWidgets('Home action card labels use a consistent readable style', (
