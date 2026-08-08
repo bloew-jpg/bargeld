@@ -50,12 +50,6 @@ Future<String?> pickTextFileWeb() async {
   }
 
   input.onChange.listen((event) => onChange(event));
-  input.onCancel.listen((_) {
-    cleanup();
-    if (!completer.isCompleted) {
-      completer.complete(null);
-    }
-  });
 
   html.document.body!.append(input);
   input.click();
