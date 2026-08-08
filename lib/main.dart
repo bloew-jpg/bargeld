@@ -103,6 +103,24 @@ class _HomePageState extends State<HomePage> {
     return '${wert.toStringAsFixed(2).replaceAll('.', ',')} €';
   }
 
+  String get _currentMonthName {
+    const months = [
+      'Januar',
+      'Februar',
+      'März',
+      'April',
+      'Mai',
+      'Juni',
+      'Juli',
+      'August',
+      'September',
+      'Oktober',
+      'November',
+      'Dezember',
+    ];
+    return months[DateTime.now().month - 1];
+  }
+
   Future<void> bargeldErhalten() async {
     final betragController = TextEditingController();
     final notizController = TextEditingController();
@@ -698,7 +716,7 @@ class _HomePageState extends State<HomePage> {
                       Expanded(
                         child: _actionButton(
                           icon: Icons.bar_chart_rounded,
-                          label: 'Monat',
+                          label: _currentMonthName,
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -795,19 +813,15 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                    style: TextStyle(
-                      fontSize: isPrimary ? 14.5 : 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: textColor,
-                    ),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF243128),
                   ),
                 ),
               ),

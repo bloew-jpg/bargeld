@@ -11,6 +11,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:bargeld/main.dart';
 
+String currentMonthName() {
+  const months = [
+    'Januar',
+    'Februar',
+    'März',
+    'April',
+    'Mai',
+    'Juni',
+    'Juli',
+    'August',
+    'September',
+    'Oktober',
+    'November',
+    'Dezember',
+  ];
+  return months[DateTime.now().month - 1];
+}
+
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -26,8 +44,20 @@ void main() {
     expect(find.text('0,00 €'), findsOneWidget);
     expect(find.text('Ausgabe'), findsOneWidget);
     expect(find.text('Einnahme'), findsOneWidget);
-    expect(find.text('Monat'), findsOneWidget);
+    expect(find.text(currentMonthName()), findsOneWidget);
     expect(find.text('Buchungen'), findsOneWidget);
+  });
+
+  testWidgets('Home action card labels use a consistent readable style', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const BargeldApp());
+
+    for (final label in ['Ausgabe', 'Einnahme', currentMonthName(), 'Buchungen']) {
+      final textWidget = tester.widget<Text>(find.text(label));
+      expect(textWidget.style?.fontSize, 16);
+      expect(textWidget.style?.fontWeight, FontWeight.w600);
+    }
   });
 
   testWidgets('Saving a withdrawal updates the balance and persists it', (
@@ -99,8 +129,8 @@ void main() {
     await tester.tap(find.text('Speichern'));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Monat'));
-    await tester.tap(find.text('Monat'));
+    await tester.ensureVisible(find.text(currentMonthName()));
+    await tester.tap(find.text(currentMonthName()));
     await tester.pumpAndSettle();
 
     expect(find.text('Abgehoben'), findsOneWidget);
@@ -181,8 +211,8 @@ void main() {
     await tester.tap(find.text('Speichern'));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Monat'));
-    await tester.tap(find.text('Monat'));
+    await tester.ensureVisible(find.text(currentMonthName()));
+    await tester.tap(find.text(currentMonthName()));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Für Excel kopieren'));
