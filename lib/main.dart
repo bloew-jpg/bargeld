@@ -887,91 +887,196 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Buchungen'),
-        backgroundColor: const Color(0xFF35933E),
-        foregroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF6F2EA),
+        foregroundColor: const Color(0xFF243128),
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
-      backgroundColor: const Color(0xFFF4F7F3),
+      backgroundColor: const Color(0xFFF6F2EA),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 430),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: sortedTransactions.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final tx = sortedTransactions[index];
-                return Card(
-                  child: InkWell(
-                    onTap: () async {
-                      await widget.onEditTransaction(tx);
-                      if (mounted) {
-                        setState(() {
-                          _transactions = [...widget.transactions];
-                        });
-                      }
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  tx.type == TransactionType.withdrawal
-                                      ? 'Abhebung'
-                                      : tx.type == TransactionType.cashReceived
-                                          ? 'Bar erhalten'
-                                          : 'Ausgabe',
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              Text(
-                                _formatAmount(tx),
-                                style: TextStyle(
-                                  color: tx.type == TransactionType.expense
-                                      ? Colors.red[700]
-                                      : Colors.green[700],
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(_formatDate(tx.date)),
-                          if (tx.category != null && tx.category!.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text('Kategorie: ${tx.category}'),
-                          ],
-                          if (tx.note != null && tx.note!.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text(tx.note!),
-                          ],
-                          const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () async {
-                                await widget.onDeleteTransaction(tx);
-                                if (mounted) {
-                                  setState(() {
-                                    _transactions = [...widget.transactions];
-                                  });
-                                }
-                              },
-                            ),
+            child: sortedTransactions.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFCFAF6),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
+                      child: const Text(
+                        'Noch keine Buchungen vorhanden.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF243128),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    itemCount: sortedTransactions.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final tx = sortedTransactions[index];
+                      final title = tx.type == TransactionType.withdrawal
+                          ? 'Abhebung'
+                          : tx.type == TransactionType.cashReceived
+                              ? 'Bar erhalten'
+                              : 'Ausgabe';
+                      final accentColor = tx.type == TransactionType.expense
+                          ? const Color(0xFFB6534E)
+                          : tx.type == TransactionType.cashReceived
+                              ? const Color(0xFF3E6A50)
+                              : const Color(0xFF243128);
+
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFCFAF6),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () async {
+                              await widget.onEditTransaction(tx);
+                              if (mounted) {
+                                setState(() {
+                                  _transactions = [...widget.transactions];
+                                });
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(22),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                title,
+                                                style: const TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Color(0xFF243128),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              _formatAmount(tx),
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                                color: accentColor,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          _formatDate(tx.date),
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFF243128).withOpacity(0.64),
+                                          ),
+                                        ),
+                                        if (tx.category != null && tx.category!.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Kategorie: ${tx.category}',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: const Color(0xFF243128).withOpacity(0.72),
+                                            ),
+                                          ),
+                                        ],
+                                        if (tx.note != null && tx.note!.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            tx.note!,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: const Color(0xFF243128).withOpacity(0.72),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Column(
+                                    children: [
+                                      Container(
+                                        width: 38,
+                                        height: 38,
+                                        decoration: BoxDecoration(
+                                          color: accentColor.withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(
+                                          tx.type == TransactionType.expense
+                                              ? Icons.remove_circle_outline_rounded
+                                              : tx.type == TransactionType.cashReceived
+                                                  ? Icons.add_circle_outline_rounded
+                                                  : Icons.account_balance_wallet_rounded,
+                                          size: 19,
+                                          color: accentColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      IconButton(
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        icon: const Icon(Icons.delete, size: 20),
+                                        color: const Color(0xFF243128).withOpacity(0.72),
+                                        onPressed: () async {
+                                          await widget.onDeleteTransaction(tx);
+                                          if (mounted) {
+                                            setState(() {
+                                              _transactions = [...widget.transactions];
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ),
       ),
@@ -1103,132 +1208,306 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
   Widget build(BuildContext context) {
     final monthTransactions = _transactionsForMonth();
     final expensesByCategory = _expensesByCategory();
+    final balanceColor = _balanceAtMonthEnd() >= 0
+        ? const Color(0xFF3E6A50)
+        : const Color(0xFFB6534E);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Monatsübersicht'),
-        backgroundColor: const Color(0xFF35933E),
-        foregroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF6F2EA),
+        foregroundColor: const Color(0xFF243128),
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
-      backgroundColor: const Color(0xFFF4F7F3),
+      backgroundColor: const Color(0xFFF6F2EA),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 430),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedMonth = DateTime(
-                              _selectedMonth.year,
-                              _selectedMonth.month - 1,
-                            );
-                          });
-                        },
-                        icon: const Icon(Icons.chevron_left),
-                      ),
-                      Text(
-                        _monthLabel(_selectedMonth),
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFCFAF6),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedMonth = DateTime(
-                              _selectedMonth.year,
-                              _selectedMonth.month + 1,
-                            );
-                          });
-                        },
-                        icon: const Icon(Icons.chevron_right),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _summaryRow('Abgehoben', _totalWithdrawals()),
-                          const SizedBox(height: 8),
-                          _summaryRow('Sonstiges bar erhalten', _totalCashReceived()),
-                          const SizedBox(height: 8),
-                          _summaryRow('Ausgegeben', _totalExpenses()),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.green[50],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Bar noch da',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  _formatAmount(_balanceAtMonthEnd()),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: _copyMonthlyValues,
-                    icon: const Icon(Icons.copy),
-                    label: const Text('Für Excel kopieren'),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: monthTransactions.isEmpty
-                        ? const Center(child: Text('Keine Buchungen für diesen Monat.'))
-                        : ListView(
+                    child: Row(
+                      children: [
+                        _monthButton(
+                          icon: Icons.chevron_left,
+                          onPressed: () {
+                            setState(() {
+                              _selectedMonth = DateTime(
+                                _selectedMonth.year,
+                                _selectedMonth.month - 1,
+                              );
+                            });
+                          },
+                        ),
+                        Expanded(
+                          child: Column(
                             children: [
-                              if (expensesByCategory.isNotEmpty) ...[
-                                const Padding(
-                                  padding: EdgeInsets.only(bottom: 8),
-                                  child: Text(
-                                    'Kategorien',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
+                              Text(
+                                _monthLabel(_selectedMonth),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF243128),
                                 ),
-                                ...expensesByCategory.entries.map((entry) {
-                                  return Card(
-                                    child: ListTile(
-                                      title: Text(entry.key),
-                                      trailing: Text(_formatAmount(entry.value)),
-                                    ),
-                                  );
-                                }),
-                              ],
-                              const SizedBox(height: 12),
-                              Card(
-                                child: ListTile(
-                                  title: const Text('Gesamt'),
-                                  trailing: Text(_formatAmount(_totalExpenses())),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Monatsübersicht',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF243128).withOpacity(0.64),
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                        _monthButton(
+                          icon: Icons.chevron_right,
+                          onPressed: () {
+                            setState(() {
+                              _selectedMonth = DateTime(
+                                _selectedMonth.year,
+                                _selectedMonth.month + 1,
+                              );
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFCFAF6),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        _summaryRow('Abgehoben', _totalWithdrawals()),
+                        const SizedBox(height: 8),
+                        _summaryRow('Sonstiges bar erhalten', _totalCashReceived()),
+                        const SizedBox(height: 8),
+                        _summaryRow('Ausgegeben', _totalExpenses()),
+                        const SizedBox(height: 10),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: balanceColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: balanceColor.withOpacity(0.2), width: 1),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Bar noch da',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF243128),
+                                ),
+                              ),
+                              Text(
+                                _formatAmount(_balanceAtMonthEnd()),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                  color: balanceColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _copyMonthlyValues,
+                      icon: const Icon(Icons.content_copy_rounded, size: 18),
+                      label: const Text('Für Excel kopieren'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF243128),
+                        backgroundColor: const Color(0xFFFCFAF6),
+                        side: const BorderSide(color: Color(0xFFCAD9C8), width: 1),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Expanded(
+                    child: monthTransactions.isEmpty
+                        ? Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFCFAF6),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Keine Buchungen für diesen Monat.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFF243128),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFCFAF6),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ListView(
+                              children: [
+                                if (expensesByCategory.isNotEmpty) ...[
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Text(
+                                      'Kategorien',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF243128).withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ),
+                                  ...expensesByCategory.entries.map((entry) {
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF9F5EE),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: const Color(0xFFE7E1D6),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              entry.key,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF243128),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _formatAmount(entry.value),
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                              color: Color(0xFF243128),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                ],
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF9F5EE),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: const Color(0xFFE7E1D6),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Expanded(
+                                        child: Text(
+                                          'Gesamt',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF243128),
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        _formatAmount(_totalExpenses()),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF243128),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                   ),
                 ],
@@ -1240,16 +1519,54 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
     );
   }
 
+  Widget _monthButton({required IconData icon, required VoidCallback onPressed}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F5EE),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFCAD9C8), width: 1),
+      ),
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, color: const Color(0xFF3E6A50)),
+        splashRadius: 20,
+      ),
+    );
+  }
+
   Widget _summaryRow(String label, double value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(label, overflow: TextOverflow.ellipsis),
-        ),
-        const SizedBox(width: 12),
-        Text(_formatAmount(value)),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F5EE),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF243128),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            _formatAmount(value),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF243128),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
