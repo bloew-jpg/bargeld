@@ -24,9 +24,9 @@ void main() {
     expect(find.text('BARGELD'), findsOneWidget);
     expect(find.text('Aktueller Bargeldbestand'), findsOneWidget);
     expect(find.text('0,00 €'), findsOneWidget);
-    expect(find.text('Ausgabe erfassen'), findsOneWidget);
-    expect(find.text('Bargeld erhalten'), findsOneWidget);
-    expect(find.text('Monatsübersicht'), findsOneWidget);
+    expect(find.text('Ausgabe'), findsOneWidget);
+    expect(find.text('Einnahme'), findsOneWidget);
+    expect(find.text('Monat'), findsOneWidget);
     expect(find.text('Buchungen'), findsOneWidget);
   });
 
@@ -34,8 +34,8 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const BargeldApp());
-    await tester.ensureVisible(find.text('Bargeld erhalten'));
-    await tester.tap(find.text('Bargeld erhalten'));
+    await tester.ensureVisible(find.text('Einnahme'));
+    await tester.tap(find.text('Einnahme'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, '12.50');
@@ -50,7 +50,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const BargeldApp());
 
-    await tester.tap(find.text('Bargeld erhalten'));
+    await tester.tap(find.text('Einnahme'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, '8.25');
@@ -72,8 +72,8 @@ void main() {
   ) async {
     await tester.pumpWidget(const BargeldApp());
 
-    await tester.ensureVisible(find.text('Bargeld erhalten'));
-    await tester.tap(find.text('Bargeld erhalten'));
+    await tester.ensureVisible(find.text('Einnahme'));
+    await tester.tap(find.text('Einnahme'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '7.50');
     await tester.tap(find.text('Speichern'));
@@ -92,15 +92,15 @@ void main() {
   ) async {
     await tester.pumpWidget(const BargeldApp());
 
-    await tester.ensureVisible(find.text('Bargeld erhalten'));
-    await tester.tap(find.text('Bargeld erhalten'));
+    await tester.ensureVisible(find.text('Einnahme'));
+    await tester.tap(find.text('Einnahme'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '10.00');
     await tester.tap(find.text('Speichern'));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Monatsübersicht'));
-    await tester.tap(find.text('Monatsübersicht'));
+    await tester.ensureVisible(find.text('Monat'));
+    await tester.tap(find.text('Monat'));
     await tester.pumpAndSettle();
 
     expect(find.text('Abgehoben'), findsOneWidget);
@@ -114,8 +114,8 @@ void main() {
   ) async {
     await tester.pumpWidget(const BargeldApp());
 
-    await tester.ensureVisible(find.text('Ausgabe erfassen'));
-    await tester.tap(find.text('Ausgabe erfassen'));
+    await tester.ensureVisible(find.text('Ausgabe'));
+    await tester.tap(find.text('Ausgabe'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, '10.00');
@@ -136,8 +136,8 @@ void main() {
   ) async {
     await tester.pumpWidget(const BargeldApp());
 
-    await tester.ensureVisible(find.text('Bargeld erhalten'));
-    await tester.tap(find.text('Bargeld erhalten'));
+    await tester.ensureVisible(find.text('Einnahme'));
+    await tester.tap(find.text('Einnahme'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '12.50');
     await tester.tap(find.text('Speichern'));
@@ -169,8 +169,8 @@ void main() {
   ) async {
     await tester.pumpWidget(const BargeldApp());
 
-    await tester.ensureVisible(find.text('Ausgabe erfassen'));
-    await tester.tap(find.text('Ausgabe erfassen'));
+    await tester.ensureVisible(find.text('Ausgabe'));
+    await tester.tap(find.text('Ausgabe'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, '4.50');
@@ -181,8 +181,8 @@ void main() {
     await tester.tap(find.text('Speichern'));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Monatsübersicht'));
-    await tester.tap(find.text('Monatsübersicht'));
+    await tester.ensureVisible(find.text('Monat'));
+    await tester.tap(find.text('Monat'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Für Excel kopieren'));

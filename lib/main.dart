@@ -676,7 +676,7 @@ class _HomePageState extends State<HomePage> {
                       Expanded(
                         child: _actionButton(
                           icon: Icons.remove_circle_outline_rounded,
-                          label: 'Ausgabe erfassen',
+                          label: 'Ausgabe',
                           onPressed: ausgabeErfassen,
                           isPrimary: true,
                         ),
@@ -685,7 +685,7 @@ class _HomePageState extends State<HomePage> {
                       Expanded(
                         child: _actionButton(
                           icon: Icons.add_circle_outline_rounded,
-                          label: 'Bargeld erhalten',
+                          label: 'Einnahme',
                           onPressed: bargeldErhalten,
                           isPrimary: true,
                         ),
@@ -698,7 +698,7 @@ class _HomePageState extends State<HomePage> {
                       Expanded(
                         child: _actionButton(
                           icon: Icons.bar_chart_rounded,
-                          label: 'Monatsübersicht',
+                          label: 'Monat',
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -804,7 +804,7 @@ class _HomePageState extends State<HomePage> {
                     overflow: TextOverflow.ellipsis,
                     softWrap: false,
                     style: TextStyle(
-                      fontSize: isPrimary ? 13.5 : 12.5,
+                      fontSize: isPrimary ? 14.5 : 13.5,
                       fontWeight: FontWeight.w600,
                       color: textColor,
                     ),
