@@ -96,7 +96,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Color get _balanceColor {
-    return _bargeldbestand >= 0 ? const Color(0xFF35933E) : Colors.red;
+    return _bargeldbestand >= 0 ? const Color(0xFF3E6A50) : Colors.red;
   }
 
   String euro(double wert) {
@@ -610,7 +610,7 @@ class _HomePageState extends State<HomePage> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 430),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -626,13 +626,13 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   Container(
                     key: const Key('balance-card'),
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                      vertical: 24,
-                      horizontal: 20,
+                      vertical: 18,
+                      horizontal: 18,
                     ),
                     decoration: BoxDecoration(
                       color: _balanceColor,
@@ -670,7 +670,7 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
                       Expanded(
@@ -692,7 +692,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
@@ -764,7 +764,7 @@ class _HomePageState extends State<HomePage> {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(22),
         child: Container(
-          height: isPrimary ? 92 : 74,
+          height: isPrimary ? 82 : 68,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: backgroundColor,
@@ -795,12 +795,19 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: isPrimary ? 14 : 13,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                    style: TextStyle(
+                      fontSize: isPrimary ? 13.5 : 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                    ),
                   ),
                 ),
               ),
