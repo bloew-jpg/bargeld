@@ -200,7 +200,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Color get _balanceColor {
-    return _bargeldbestand >= 0 ? const Color(0xFF3E6A50) : Colors.red;
+    return _bargeldbestand >= 0
+        ? const Color(0xFF3E6A50)
+      : Colors.red;
   }
 
   String euro(double wert) {
@@ -223,6 +225,10 @@ class _HomePageState extends State<HomePage> {
       'Dezember',
     ];
     return months[DateTime.now().month - 1];
+  }
+
+  String get _currentMonthYear {
+    return '$_currentMonthName ${DateTime.now().year}';
   }
 
   Future<void> bargeldErhalten() async {
@@ -731,138 +737,194 @@ class _HomePageState extends State<HomePage> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 430),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'BARGELD',
-                      style: TextStyle(
-                        fontSize: 22,
-                        letterSpacing: 2.4,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF243128),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    key: const Key('balance-card'),
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 18,
-                      horizontal: 18,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _balanceColor,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 18,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Aktueller Bargeldbestand',
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const topBottomPadding = 30.0;
+                const headerHeight = 26.0;
+                const headerToCardSpacing = 14.0;
+                const cardToGridSpacing = 16.0;
+                const interRowSpacing = 12.0;
+                const balanceCardHeight = 170.0;
+
+                final availableForGrid = constraints.maxHeight -
+                    (topBottomPadding +
+                        headerHeight +
+                        headerToCardSpacing +
+                        balanceCardHeight +
+                        cardToGridSpacing +
+                        interRowSpacing);
+                final actionCardHeight =
+                    ((availableForGrid / 2).clamp(96.0, 122.0) as num)
+                        .toDouble();
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: const Text(
+                          'BARGELD',
                           style: TextStyle(
-                            fontSize: 13,
-                            letterSpacing: 1.1,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          euro(_bargeldbestand),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 34,
+                            fontSize: 12,
+                            letterSpacing: 3.2,
                             fontWeight: FontWeight.w700,
-                            height: 1.1,
+                            color: Color(0xFF243128),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _actionButton(
-                          icon: Icons.remove_circle_outline_rounded,
-                          label: 'Ausgabe',
-                          onPressed: ausgabeErfassen,
-                          isPrimary: true,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildBalanceCard(),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: actionCardHeight,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _actionButton(
+                                icon: Icons.remove_circle_outline_rounded,
+                                label: 'Ausgabe',
+                                onPressed: ausgabeErfassen,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _actionButton(
+                                icon: Icons.add_circle_outline_rounded,
+                                label: 'Einnahme',
+                                onPressed: bargeldErhalten,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _actionButton(
-                          icon: Icons.add_circle_outline_rounded,
-                          label: 'Einnahme',
-                          onPressed: bargeldErhalten,
-                          isPrimary: true,
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: actionCardHeight,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _actionButton(
+                                icon: Icons.bar_chart_rounded,
+                                label: _currentMonthName,
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => MonthlyOverviewPage(
+                                        transactions: _transactions,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _actionButton(
+                                icon: Icons.receipt_long_rounded,
+                                label: 'Buchungen',
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => TransactionsPage(
+                                        transactions: _transactions,
+                                        onEditTransaction: _editTransaction,
+                                        onDeleteTransaction: _deleteTransaction,
+                                        onBackupCreate: _exportBackup,
+                                        onBackupRestore: _restoreBackup,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _actionButton(
-                          icon: Icons.bar_chart_rounded,
-                          label: _currentMonthName,
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => MonthlyOverviewPage(
-                                  transactions: _transactions,
-                                ),
-                              ),
-                            );
-                          },
-                          isPrimary: false,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _actionButton(
-                          icon: Icons.receipt_long_rounded,
-                          label: 'Buchungen',
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => TransactionsPage(
-                                  transactions: _transactions,
-                                  onEditTransaction: _editTransaction,
-                                  onDeleteTransaction: _deleteTransaction,
-                                  onBackupCreate: _exportBackup,
-                                  onBackupRestore: _restoreBackup,
-                                ),
-                              ),
-                            );
-                          },
-                          isPrimary: false,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBalanceCard() {
+    return Container(
+      key: const Key('balance-card'),
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 170),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+      decoration: BoxDecoration(
+        color: _balanceColor,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 22,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -6,
+            bottom: -10,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.18,
+                child: CustomPaint(
+                  size: const Size(130, 90),
+                  painter: _BotanicalBranchPainter(),
+                ),
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Aktueller Bargeldbestand',
+                style: TextStyle(
+                  fontSize: 13,
+                  letterSpacing: 1.0,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withOpacity(0.88),
+                ),
+              ),
+              const SizedBox(height: 10),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  euro(_bargeldbestand),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 42,
+                    fontWeight: FontWeight.w700,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _currentMonthYear,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.86),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -871,64 +933,61 @@ class _HomePageState extends State<HomePage> {
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
-    required bool isPrimary,
   }) {
-    final backgroundColor = isPrimary
-        ? const Color(0xFFF9F5EE)
-        : const Color(0xFFFCFAF6);
-    final borderColor = isPrimary
-        ? const Color(0xFFCAD9C8)
-        : const Color(0xFFE7E1D6);
+    const backgroundColor = Color(0xFFFCFAF6);
+    const borderColor = Color(0xFFE1DDD3);
     final iconColor = const Color(0xFF3E6A50);
-    final textColor = const Color(0xFF243128);
+    const iconBackground = Color(0xFFE8EEE5);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
-          height: isPrimary ? 82 : 68,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          width: double.infinity,
+          height: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: borderColor, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: Colors.black.withOpacity(0.035),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
               ),
             ],
           ),
-          child: Row(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  color: iconBackground,
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   icon,
-                  size: 22,
+                  size: 28,
                   color: iconColor,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF243128),
-                  ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF243128),
                 ),
               ),
             ],
@@ -937,6 +996,52 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
+
+class _BotanicalBranchPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stemPaint = Paint()
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.52)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+
+    final leafPaint = Paint()
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.42)
+      ..style = PaintingStyle.fill;
+
+    final stem = Path()
+      ..moveTo(0, size.height * 0.9)
+      ..quadraticBezierTo(
+        size.width * 0.35,
+        size.height * 0.3,
+        size.width * 0.92,
+        size.height * 0.08,
+      );
+    canvas.drawPath(stem, stemPaint);
+
+    void drawLeaf(Offset center, double width, double height, double rotation) {
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(rotation);
+      final leaf = Path()
+        ..moveTo(-width / 2, 0)
+        ..quadraticBezierTo(0, -height / 2, width / 2, 0)
+        ..quadraticBezierTo(0, height / 2, -width / 2, 0)
+        ..close();
+      canvas.drawPath(leaf, leafPaint);
+      canvas.restore();
+    }
+
+    drawLeaf(Offset(size.width * 0.35, size.height * 0.58), 26, 14, -0.55);
+    drawLeaf(Offset(size.width * 0.5, size.height * 0.43), 24, 13, 0.18);
+    drawLeaf(Offset(size.width * 0.64, size.height * 0.31), 22, 12, -0.35);
+    drawLeaf(Offset(size.width * 0.78, size.height * 0.22), 20, 11, 0.28);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class TransactionsPage extends StatefulWidget {
