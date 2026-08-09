@@ -1063,25 +1063,37 @@ class _TransactionsPageState extends State<TransactionsPage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) async {
-              if (value == 'backup_create') {
-                await widget.onBackupCreate();
-              } else if (value == 'backup_restore') {
-                await widget.onBackupRestore();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'backup_create',
-                child: Text('Backup erstellen'),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFCFAF6),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE1DDD3), width: 1),
               ),
-              const PopupMenuItem(
-                value: 'backup_restore',
-                child: Text('Backup wiederherstellen'),
+              child: PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, size: 20),
+                color: const Color(0xFFFCFAF6),
+                surfaceTintColor: Colors.transparent,
+                onSelected: (value) async {
+                  if (value == 'backup_create') {
+                    await widget.onBackupCreate();
+                  } else if (value == 'backup_restore') {
+                    await widget.onBackupRestore();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'backup_create',
+                    child: Text('Backup erstellen'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'backup_restore',
+                    child: Text('Backup wiederherstellen'),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -1092,10 +1104,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
             constraints: const BoxConstraints(maxWidth: 430),
             child: sortedTransactions.isEmpty
                 ? Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(18),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFCFAF6),
                         borderRadius: BorderRadius.circular(24),
@@ -1108,44 +1120,62 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           ),
                         ],
                       ),
-                      child: const Text(
-                        'Noch keine Buchungen vorhanden.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFF243128),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.receipt_long_rounded,
+                            size: 28,
+                            color: Color(0xFF7D897E),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            'Noch keine Buchungen',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFF243128),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
                     itemCount: sortedTransactions.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    separatorBuilder: (context, index) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final tx = sortedTransactions[index];
-                      final title = tx.type == TransactionType.withdrawal
-                          ? 'Abhebung'
-                          : tx.type == TransactionType.cashReceived
-                              ? 'Bar erhalten'
-                              : 'Ausgabe';
-                      final accentColor = tx.type == TransactionType.expense
+                      final isExpense = tx.type == TransactionType.expense;
+                      final title = isExpense
+                          ? ((tx.category != null && tx.category!.isNotEmpty)
+                                ? tx.category!
+                                : 'Ausgabe')
+                          : tx.type == TransactionType.withdrawal
+                              ? 'Abhebung'
+                              : 'Bar erhalten';
+                      final accentColor = isExpense
                           ? const Color(0xFFB6534E)
-                          : tx.type == TransactionType.cashReceived
-                              ? const Color(0xFF3E6A50)
-                              : const Color(0xFF243128);
+                          : const Color(0xFF3E6A50);
+                      final icon = isExpense
+                          ? Icons.remove_circle_outline_rounded
+                          : tx.type == TransactionType.withdrawal
+                              ? Icons.account_balance_wallet_rounded
+                              : Icons.add_circle_outline_rounded;
+                      final subtitle = isExpense ? 'Ausgabe' : null;
 
                       return Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFFFCFAF6),
-                          borderRadius: BorderRadius.circular(22),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              color: Colors.black.withOpacity(0.025),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
@@ -1160,107 +1190,121 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                 });
                               }
                             },
-                            borderRadius: BorderRadius.circular(22),
+                            borderRadius: BorderRadius.circular(18),
                             child: Padding(
-                              padding: const EdgeInsets.all(14),
+                              padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Container(
+                                    width: 34,
+                                    height: 34,
+                                    margin: const EdgeInsets.only(top: 2),
+                                    decoration: BoxDecoration(
+                                      color: accentColor.withOpacity(0.13),
+                                      borderRadius: BorderRadius.circular(11),
+                                    ),
+                                    child: Icon(
+                                      icon,
+                                      size: 18,
+                                      color: accentColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Expanded(
-                                              child: Text(
-                                                title,
-                                                style: const TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: Color(0xFF243128),
-                                                ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    title,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: Color(0xFF243128),
+                                                      height: 1.2,
+                                                    ),
+                                                  ),
+                                                  if (subtitle != null) ...[
+                                                    const SizedBox(height: 1),
+                                                    Text(
+                                                      subtitle,
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: const Color(0xFF243128)
+                                                            .withOpacity(0.58),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              _formatAmount(tx),
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w700,
-                                                color: accentColor,
+                                            const SizedBox(width: 10),
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 1),
+                                              child: Text(
+                                                _formatAmount(tx),
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: accentColor,
+                                                  height: 1.1,
+                                                ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          _formatDate(tx.date),
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: const Color(0xFF243128).withOpacity(0.64),
-                                          ),
-                                        ),
-                                        if (tx.category != null && tx.category!.isNotEmpty) ...[
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            'Kategorie: ${tx.category}',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: const Color(0xFF243128).withOpacity(0.72),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              _formatDate(tx.date),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: const Color(0xFF243128).withOpacity(0.6),
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                         if (tx.note != null && tx.note!.isNotEmpty) ...[
                                           const SizedBox(height: 4),
                                           Text(
                                             tx.note!,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
-                                              fontSize: 13,
-                                              color: const Color(0xFF243128).withOpacity(0.72),
+                                              fontSize: 12,
+                                              color: const Color(0xFF243128).withOpacity(0.68),
                                             ),
                                           ),
                                         ],
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Column(
-                                    children: [
-                                      Container(
-                                        width: 38,
-                                        height: 38,
-                                        decoration: BoxDecoration(
-                                          color: accentColor.withOpacity(0.12),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Icon(
-                                          tx.type == TransactionType.expense
-                                              ? Icons.remove_circle_outline_rounded
-                                              : tx.type == TransactionType.cashReceived
-                                                  ? Icons.add_circle_outline_rounded
-                                                  : Icons.account_balance_wallet_rounded,
-                                          size: 19,
-                                          color: accentColor,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      IconButton(
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        icon: const Icon(Icons.delete, size: 20),
-                                        color: const Color(0xFF243128).withOpacity(0.72),
-                                        onPressed: () async {
-                                          await widget.onDeleteTransaction(tx);
-                                          if (mounted) {
-                                            setState(() {
-                                              _transactions = [...widget.transactions];
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    ],
+                                  const SizedBox(width: 4),
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    tooltip: 'Löschen',
+                                    icon: const Icon(Icons.delete, size: 20),
+                                    color: const Color(0xFF243128).withOpacity(0.7),
+                                    onPressed: () async {
+                                      await widget.onDeleteTransaction(tx);
+                                      if (mounted) {
+                                        setState(() {
+                                          _transactions = [...widget.transactions];
+                                        });
+                                      }
+                                    },
                                   ),
                                 ],
                               ),
