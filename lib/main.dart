@@ -861,6 +861,7 @@ class _HomePageState extends State<HomePage> {
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 170),
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: _balanceColor,
         borderRadius: BorderRadius.circular(30),
@@ -876,13 +877,14 @@ class _HomePageState extends State<HomePage> {
         children: [
           Positioned(
             right: -6,
-            bottom: -10,
+            bottom: -8,
             child: IgnorePointer(
               child: Opacity(
-                opacity: 0.18,
-                child: CustomPaint(
-                  size: const Size(130, 90),
-                  painter: _BotanicalBranchPainter(),
+                opacity: 0.2,
+                child: Image.asset(
+                  'assets/images/balance_branch.png',
+                  width: 138,
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
@@ -996,52 +998,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-}
-
-class _BotanicalBranchPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final stemPaint = Paint()
-      ..color = const Color(0xFFFFFFFF).withOpacity(0.52)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
-
-    final leafPaint = Paint()
-      ..color = const Color(0xFFFFFFFF).withOpacity(0.42)
-      ..style = PaintingStyle.fill;
-
-    final stem = Path()
-      ..moveTo(0, size.height * 0.9)
-      ..quadraticBezierTo(
-        size.width * 0.35,
-        size.height * 0.3,
-        size.width * 0.92,
-        size.height * 0.08,
-      );
-    canvas.drawPath(stem, stemPaint);
-
-    void drawLeaf(Offset center, double width, double height, double rotation) {
-      canvas.save();
-      canvas.translate(center.dx, center.dy);
-      canvas.rotate(rotation);
-      final leaf = Path()
-        ..moveTo(-width / 2, 0)
-        ..quadraticBezierTo(0, -height / 2, width / 2, 0)
-        ..quadraticBezierTo(0, height / 2, -width / 2, 0)
-        ..close();
-      canvas.drawPath(leaf, leafPaint);
-      canvas.restore();
-    }
-
-    drawLeaf(Offset(size.width * 0.35, size.height * 0.58), 26, 14, -0.55);
-    drawLeaf(Offset(size.width * 0.5, size.height * 0.43), 24, 13, 0.18);
-    drawLeaf(Offset(size.width * 0.64, size.height * 0.31), 22, 12, -0.35);
-    drawLeaf(Offset(size.width * 0.78, size.height * 0.22), 20, 11, 0.28);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class TransactionsPage extends StatefulWidget {
