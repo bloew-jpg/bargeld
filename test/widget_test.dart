@@ -80,7 +80,11 @@ void main() {
 
   test('backup validation rejects incompatible payloads', () {
     expect(
-      () => BargeldBackup.fromJson({'formatVersion': 2, 'createdAt': '2026-08-08', 'transactions': []}),
+      () => BargeldBackup.fromJson({
+        'formatVersion': 2,
+        'createdAt': '2026-08-08',
+        'transactions': [],
+      }),
       throwsA(isA<FormatException>()),
     );
   });
@@ -166,12 +170,85 @@ void main() {
     expect(restored.single.id, 'old');
   });
 
+  test('monthly carryovers are unique and update with prior-month changes', () {
+    final withdrawal = KaufTransaction(
+      id: 'withdrawal',
+      type: TransactionType.withdrawal,
+      amount: 100,
+      date: DateTime(2026, 1, 10),
+      note: null,
+      category: null,
+      createdAt: DateTime(2026, 1, 10),
+    );
+    final expense = KaufTransaction(
+      id: 'expense',
+      type: TransactionType.expense,
+      amount: 20,
+      date: DateTime(2026, 1, 11),
+      note: null,
+      category: 'Gesundheit',
+      createdAt: DateTime(2026, 1, 11),
+    );
+
+    final reconciled = MonthlyCarryoverManager.reconcile([
+      withdrawal,
+      expense,
+    ], now: DateTime(2026, 2, 1));
+    final carryover = reconciled.singleWhere(
+      (tx) => tx.type == TransactionType.carryover,
+    );
+    expect(carryover.id, 'carryover-2026-02');
+    expect(carryover.amount, 80);
+
+    final reconciledAgain = MonthlyCarryoverManager.reconcile(
+      reconciled,
+      now: DateTime(2026, 2, 1),
+    );
+    expect(
+      reconciledAgain.where((tx) => tx.type == TransactionType.carryover),
+      hasLength(1),
+    );
+
+    final updatedExpense = KaufTransaction(
+      id: expense.id,
+      type: expense.type,
+      amount: 50,
+      date: expense.date,
+      note: expense.note,
+      category: expense.category,
+      createdAt: expense.createdAt,
+    );
+    final updated = MonthlyCarryoverManager.reconcile([
+      withdrawal,
+      updatedExpense,
+    ], now: DateTime(2026, 2, 1));
+    expect(
+      updated.singleWhere((tx) => tx.type == TransactionType.carryover).amount,
+      50,
+    );
+
+    final afterDeletion = MonthlyCarryoverManager.reconcile([
+      withdrawal,
+    ], now: DateTime(2026, 2, 1));
+    expect(
+      afterDeletion
+          .singleWhere((tx) => tx.type == TransactionType.carryover)
+          .amount,
+      100,
+    );
+  });
+
   testWidgets('Home action card labels use a consistent readable style', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const BargeldApp());
 
-    for (final label in ['Ausgabe', 'Einnahme', currentMonthName(), 'Buchungen']) {
+    for (final label in [
+      'Ausgabe',
+      'Einnahme',
+      currentMonthName(),
+      'Buchungen',
+    ]) {
       final textWidget = tester.widget<Text>(find.text(label));
       expect(textWidget.style?.fontSize, 16);
       expect(textWidget.style?.fontWeight, FontWeight.w600);
@@ -235,6 +312,56 @@ void main() {
     expect(find.text('Abhebung'), findsOneWidget);
   });
 
+  testWidgets('Buchungen filters transactions by the selected month', (
+    WidgetTester tester,
+  ) async {
+    final now = DateTime.now();
+    final currentTransaction = KaufTransaction(
+      id: 'current',
+      type: TransactionType.withdrawal,
+      amount: 10,
+      date: now,
+      note: 'Aktueller Monat',
+      category: null,
+      createdAt: now,
+    );
+    final previousMonth = DateTime(now.year, now.month - 1, 15);
+    final previousTransaction = KaufTransaction(
+      id: 'previous',
+      type: TransactionType.expense,
+      amount: 5,
+      date: previousMonth,
+      note: 'Vergangener Monat',
+      category: 'Gesundheit',
+      createdAt: previousMonth,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TransactionsPage(
+          transactions: [currentTransaction, previousTransaction],
+          onEditTransaction: (_) async {},
+          onDeleteTransaction: (_) async {},
+          onBackupCreate: () async {},
+          onBackupRestore: () async {},
+        ),
+      ),
+    );
+
+    expect(find.text('Aktueller Monat'), findsOneWidget);
+    expect(find.text('Vergangener Monat'), findsNothing);
+    expect(
+      tester.widget<IconButton>(find.byKey(const Key('next-month'))).onPressed,
+      isNull,
+    );
+
+    await tester.tap(find.byKey(const Key('previous-month')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Aktueller Monat'), findsNothing);
+    expect(find.text('Vergangener Monat'), findsOneWidget);
+  });
+
   testWidgets('Monthly overview shows totals for the selected month', (
     WidgetTester tester,
   ) async {
@@ -274,7 +401,9 @@ void main() {
     await tester.tap(find.text('Speichern'));
     await tester.pumpAndSettle();
 
-    final balanceCard = tester.widget<Container>(find.byKey(const Key('balance-card')));
+    final balanceCard = tester.widget<Container>(
+      find.byKey(const Key('balance-card')),
+    );
     final decoration = balanceCard.decoration as BoxDecoration;
     expect(decoration.color, Colors.red);
   });
@@ -312,30 +441,31 @@ void main() {
     expect(find.textContaining('15,75'), findsNothing);
   });
 
-  testWidgets('Monthly overview copies the selected month values to the clipboard', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const BargeldApp());
+  testWidgets(
+    'Monthly overview copies the selected month values to the clipboard',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(const BargeldApp());
 
-    await tester.ensureVisible(find.text('Ausgabe'));
-    await tester.tap(find.text('Ausgabe'));
-    await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Ausgabe'));
+      await tester.tap(find.text('Ausgabe'));
+      await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).first, '4.50');
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Gesundheit').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Speichern'));
-    await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, '4.50');
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Gesundheit').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text(currentMonthName()));
-    await tester.tap(find.text(currentMonthName()));
-    await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text(currentMonthName()));
+      await tester.tap(find.text(currentMonthName()));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Für Excel kopieren'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Für Excel kopieren'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Für Excel kopieren'), findsOneWidget);
-  });
+      expect(find.text('Für Excel kopieren'), findsOneWidget);
+    },
+  );
 }

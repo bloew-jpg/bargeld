@@ -40,9 +40,7 @@ class BargeldApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Bargeld',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2F8F3A),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2F8F3A)),
         useMaterial3: true,
       ),
       home: const HomePage(),
@@ -70,9 +68,9 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadTransactions() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList('transactions') ?? <String>[];
-    final transactions = raw
-        .map((value) => KaufTransaction.fromJson(jsonDecode(value)))
-        .toList();
+    final transactions = MonthlyCarryoverManager.reconcile(
+      raw.map((value) => KaufTransaction.fromJson(jsonDecode(value))).toList(),
+    );
 
     if (!mounted) return;
     setState(() {
@@ -80,9 +78,16 @@ class _HomePageState extends State<HomePage> {
         ..clear()
         ..addAll(transactions);
     });
+    await _saveTransactions();
   }
 
   Future<void> _saveTransactions() async {
+    final reconciledTransactions = MonthlyCarryoverManager.reconcile(
+      _transactions,
+    );
+    _transactions
+      ..clear()
+      ..addAll(reconciledTransactions);
     final prefs = await SharedPreferences.getInstance();
     final payload = _transactions.map((tx) => jsonEncode(tx.toJson())).toList();
     await prefs.setStringList('transactions', payload);
@@ -106,7 +111,8 @@ class _HomePageState extends State<HomePage> {
     );
 
     final payload = jsonEncode(backup.toJson());
-    final fileName = 'bargeld-backup-${DateTime.now().toLocal().toString().split(' ')[0]}.json';
+    final fileName =
+        'bargeld-backup-${DateTime.now().toLocal().toString().split(' ')[0]}.json';
 
     if (!mounted) return;
 
@@ -114,9 +120,9 @@ class _HomePageState extends State<HomePage> {
     await downloadTextFile(bytes, fileName);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Backup wurde erstellt.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Backup wurde erstellt.')));
     }
   }
 
@@ -141,9 +147,9 @@ class _HomePageState extends State<HomePage> {
       BargeldBackup.fromJson(jsonDecode(backupContent));
     } on FormatException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
       return;
     }
@@ -192,6 +198,9 @@ class _HomePageState extends State<HomePage> {
 
   double get _bargeldbestand {
     return _transactions.fold<double>(0, (sum, tx) {
+      if (tx.type == TransactionType.carryover) {
+        return sum;
+      }
       if (tx.type == TransactionType.expense) {
         return sum - tx.amount;
       }
@@ -200,9 +209,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Color get _balanceColor {
-    return _bargeldbestand >= 0
-        ? const Color(0xFF3E6A50)
-      : Colors.red;
+    return _bargeldbestand >= 0 ? const Color(0xFF3E6A50) : Colors.red;
   }
 
   String euro(double wert) {
@@ -250,8 +257,9 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     TextField(
                       controller: betragController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: const InputDecoration(
                         labelText: 'Betrag in Euro',
                       ),
@@ -306,6 +314,7 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: notizController,
+                      textCapitalization: TextCapitalization.sentences,
                       decoration: const InputDecoration(
                         labelText: 'Notiz (optional)',
                       ),
@@ -320,8 +329,10 @@ class _HomePageState extends State<HomePage> {
                 ),
                 FilledButton(
                   onPressed: () {
-                    final text =
-                        betragController.text.trim().replaceAll(',', '.');
+                    final text = betragController.text.trim().replaceAll(
+                      ',',
+                      '.',
+                    );
                     final betrag = double.tryParse(text);
 
                     if (betrag == null || betrag <= 0) {
@@ -396,8 +407,9 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     TextField(
                       controller: betragController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: const InputDecoration(
                         labelText: 'Betrag in Euro',
                       ),
@@ -476,6 +488,7 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: notizController,
+                      textCapitalization: TextCapitalization.sentences,
                       decoration: const InputDecoration(
                         labelText: 'Notiz (optional)',
                       ),
@@ -490,8 +503,10 @@ class _HomePageState extends State<HomePage> {
                 ),
                 FilledButton(
                   onPressed: () {
-                    final text =
-                        betragController.text.trim().replaceAll(',', '.');
+                    final text = betragController.text.trim().replaceAll(
+                      ',',
+                      '.',
+                    );
                     final betrag = double.tryParse(text);
 
                     if (betrag == null || betrag <= 0) {
@@ -505,7 +520,8 @@ class _HomePageState extends State<HomePage> {
                       return;
                     }
 
-                    if (isExpense && (kategorie == null || kategorie!.isEmpty)) {
+                    if (isExpense &&
+                        (kategorie == null || kategorie!.isEmpty)) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Bitte eine Kategorie auswählen.'),
@@ -600,8 +616,9 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     TextField(
                       controller: betragController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: const InputDecoration(
                         labelText: 'Betrag in Euro',
                       ),
@@ -609,9 +626,7 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       value: kategorie,
-                      decoration: const InputDecoration(
-                        labelText: 'Kategorie',
-                      ),
+                      decoration: const InputDecoration(labelText: 'Kategorie'),
                       isExpanded: true,
                       items: kategorien
                           .map(
@@ -654,6 +669,7 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: notizController,
+                      textCapitalization: TextCapitalization.sentences,
                       decoration: const InputDecoration(
                         labelText: 'Notiz (optional)',
                       ),
@@ -668,8 +684,10 @@ class _HomePageState extends State<HomePage> {
                 ),
                 FilledButton(
                   onPressed: () {
-                    final text =
-                        betragController.text.trim().replaceAll(',', '.');
+                    final text = betragController.text.trim().replaceAll(
+                      ',',
+                      '.',
+                    );
                     final betrag = double.tryParse(text);
 
                     if (betrag == null || betrag <= 0) {
@@ -746,7 +764,8 @@ class _HomePageState extends State<HomePage> {
                 const interRowSpacing = 12.0;
                 const balanceCardHeight = 170.0;
 
-                final availableForGrid = constraints.maxHeight -
+                final availableForGrid =
+                    constraints.maxHeight -
                     (topBottomPadding +
                         headerHeight +
                         headerToCardSpacing +
@@ -973,11 +992,7 @@ class _HomePageState extends State<HomePage> {
                   color: iconBackground,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  icon,
-                  size: 28,
-                  color: iconColor,
-                ),
+                child: Icon(icon, size: 28, color: iconColor),
               ),
               const SizedBox(height: 10),
               Text(
@@ -1022,11 +1037,13 @@ class TransactionsPage extends StatefulWidget {
 
 class _TransactionsPageState extends State<TransactionsPage> {
   late List<KaufTransaction> _transactions;
+  late DateTime _selectedMonth;
 
   @override
   void initState() {
     super.initState();
     _transactions = [...widget.transactions];
+    _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   }
 
   @override
@@ -1042,17 +1059,42 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
   }
 
+  String _monthLabel(DateTime month) {
+    const monthNames = [
+      'Januar',
+      'Februar',
+      'März',
+      'April',
+      'Mai',
+      'Juni',
+      'Juli',
+      'August',
+      'September',
+      'Oktober',
+      'November',
+      'Dezember',
+    ];
+    return '${monthNames[month.month - 1]} ${month.year}';
+  }
+
   String _formatAmount(KaufTransaction tx) {
     final amount = tx.amount.toStringAsFixed(2).replaceAll('.', ',');
     if (tx.type == TransactionType.expense) {
       return '- $amount €';
     }
-    return '+ $amount €';
+    return tx.amount < 0 ? '$amount €' : '+ $amount €';
   }
 
   @override
   Widget build(BuildContext context) {
-    final sortedTransactions = [..._transactions]
+    final currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
+    final sortedTransactions = _transactions
+        .where(
+          (tx) =>
+              tx.date.year == _selectedMonth.year &&
+              tx.date.month == _selectedMonth.month,
+        )
+        .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
 
     return Scaffold(
@@ -1102,75 +1144,145 @@ class _TransactionsPageState extends State<TransactionsPage> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 430),
-            child: sortedTransactions.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFCFAF6),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 2),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        key: const Key('previous-month'),
+                        tooltip: 'Vorheriger Monat',
+                        icon: const Icon(Icons.chevron_left_rounded),
+                        onPressed: () {
+                          setState(() {
+                            _selectedMonth = DateTime(
+                              _selectedMonth.year,
+                              _selectedMonth.month - 1,
+                            );
+                          });
+                        },
                       ),
-                      child: const Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.receipt_long_rounded,
-                            size: 28,
-                            color: Color(0xFF7D897E),
+                      Expanded(
+                        child: Text(
+                          _monthLabel(_selectedMonth),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF243128),
                           ),
-                          SizedBox(height: 10),
-                          Text(
-                            'Noch keine Buchungen',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Color(0xFF243128),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      IconButton(
+                        key: const Key('next-month'),
+                        tooltip: 'Nächster Monat',
+                        icon: const Icon(Icons.chevron_right_rounded),
+                        onPressed: _selectedMonth.isBefore(currentMonth)
+                            ? () {
+                                setState(() {
+                                  _selectedMonth = DateTime(
+                                    _selectedMonth.year,
+                                    _selectedMonth.month + 1,
+                                  );
+                                });
+                              }
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: sortedTransactions.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(18),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 28,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFCFAF6),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: const Color(0xFFE7E1D6),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.receipt_long_rounded,
+                                  size: 28,
+                                  color: Color(0xFF7D897E),
+                                ),
+                                SizedBox(height: 10),
+                                Text(
+                                  'Noch keine Buchungen',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Color(0xFF243128),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  )
-                : ListView.separated(
+                        )
+                      : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
                     itemCount: sortedTransactions.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 8),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final tx = sortedTransactions[index];
                       final isExpense = tx.type == TransactionType.expense;
+                      final isCarryover = tx.type == TransactionType.carryover;
                       final title = isExpense
                           ? ((tx.category != null && tx.category!.isNotEmpty)
                                 ? tx.category!
                                 : 'Ausgabe')
+                          : isCarryover
+                          ? 'Übertrag Vormonat'
                           : tx.type == TransactionType.withdrawal
-                              ? 'Abhebung'
-                              : 'Bar erhalten';
+                          ? 'Abhebung'
+                          : 'Bar erhalten';
                       final accentColor = isExpense
                           ? const Color(0xFFB6534E)
+                          : isCarryover
+                          ? const Color(0xFF7D897E)
                           : const Color(0xFF3E6A50);
                       final icon = isExpense
                           ? Icons.remove_circle_outline_rounded
+                          : isCarryover
+                          ? Icons.redo_rounded
                           : tx.type == TransactionType.withdrawal
-                              ? Icons.account_balance_wallet_rounded
-                              : Icons.add_circle_outline_rounded;
-                      final subtitle = isExpense ? 'Ausgabe' : null;
+                          ? Icons.account_balance_wallet_rounded
+                          : Icons.add_circle_outline_rounded;
+                      final subtitle = isExpense
+                          ? 'Ausgabe'
+                          : isCarryover
+                          ? 'Systemeintrag'
+                          : null;
 
                       return Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFFFCFAF6),
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                          border: Border.all(
+                            color: const Color(0xFFE7E1D6),
+                            width: 1,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.025),
@@ -1182,14 +1294,18 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: () async {
-                              await widget.onEditTransaction(tx);
-                              if (mounted) {
-                                setState(() {
-                                  _transactions = [...widget.transactions];
-                                });
-                              }
-                            },
+                            onTap: isCarryover
+                                ? null
+                                : () async {
+                                    await widget.onEditTransaction(tx);
+                                    if (mounted) {
+                                      setState(() {
+                                        _transactions = [
+                                          ...widget.transactions,
+                                        ];
+                                      });
+                                    }
+                                  },
                             borderRadius: BorderRadius.circular(18),
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
@@ -1213,22 +1329,27 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Expanded(
                                               child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
                                                     title,
                                                     maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                     style: const TextStyle(
                                                       fontSize: 15,
-                                                      fontWeight: FontWeight.w700,
+                                                      fontWeight:
+                                                          FontWeight.w700,
                                                       color: Color(0xFF243128),
                                                       height: 1.2,
                                                     ),
@@ -1239,9 +1360,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                                       subtitle,
                                                       style: TextStyle(
                                                         fontSize: 12,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: const Color(0xFF243128)
-                                                            .withOpacity(0.58),
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: const Color(
+                                                          0xFF243128,
+                                                        ).withOpacity(0.58),
                                                       ),
                                                     ),
                                                   ],
@@ -1250,7 +1373,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                             ),
                                             const SizedBox(width: 10),
                                             Padding(
-                                              padding: const EdgeInsets.only(top: 1),
+                                              padding: const EdgeInsets.only(
+                                                top: 1,
+                                              ),
                                               child: Text(
                                                 _formatAmount(tx),
                                                 style: TextStyle(
@@ -1271,12 +1396,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
-                                                color: const Color(0xFF243128).withOpacity(0.6),
+                                                color: const Color(
+                                                  0xFF243128,
+                                                ).withOpacity(0.6),
                                               ),
                                             ),
                                           ],
                                         ),
-                                        if (tx.note != null && tx.note!.isNotEmpty) ...[
+                                        if (tx.note != null &&
+                                            tx.note!.isNotEmpty) ...[
                                           const SizedBox(height: 4),
                                           Text(
                                             tx.note!,
@@ -1284,28 +1412,36 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               fontSize: 12,
-                                              color: const Color(0xFF243128).withOpacity(0.68),
+                                              color: const Color(
+                                                0xFF243128,
+                                              ).withOpacity(0.68),
                                             ),
                                           ),
                                         ],
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
-                                  IconButton(
-                                    visualDensity: VisualDensity.compact,
-                                    tooltip: 'Löschen',
-                                    icon: const Icon(Icons.delete, size: 20),
-                                    color: const Color(0xFF243128).withOpacity(0.7),
-                                    onPressed: () async {
-                                      await widget.onDeleteTransaction(tx);
-                                      if (mounted) {
-                                        setState(() {
-                                          _transactions = [...widget.transactions];
-                                        });
-                                      }
-                                    },
-                                  ),
+                                  if (!isCarryover) ...[
+                                    const SizedBox(width: 4),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      tooltip: 'Löschen',
+                                      icon: const Icon(Icons.delete, size: 20),
+                                      color: const Color(
+                                        0xFF243128,
+                                      ).withOpacity(0.7),
+                                      onPressed: () async {
+                                        await widget.onDeleteTransaction(tx);
+                                        if (mounted) {
+                                          setState(() {
+                                            _transactions = [
+                                              ...widget.transactions,
+                                            ];
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -1314,6 +1450,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       );
                     },
                   ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1377,7 +1516,8 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
 
   List<KaufTransaction> _transactionsForMonth() {
     return widget.transactions.where((tx) {
-      return tx.date.year == _selectedMonth.year && tx.date.month == _selectedMonth.month;
+      return tx.date.year == _selectedMonth.year &&
+          tx.date.month == _selectedMonth.month;
     }).toList();
   }
 
@@ -1400,11 +1540,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
   }
 
   double _balanceAtMonthEnd() {
-    final monthEnd = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0);
-    return widget.transactions.fold<double>(0, (sum, tx) {
-      if (tx.date.isAfter(monthEnd)) {
-        return sum;
-      }
+    return _transactionsForMonth().fold<double>(0, (sum, tx) {
       if (tx.type == TransactionType.expense) {
         return sum - tx.amount;
       }
@@ -1415,7 +1551,9 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
   Map<String, double> _expensesByCategory() {
     final result = <String, double>{};
     for (final tx in _transactionsForMonth()) {
-      if (tx.type == TransactionType.expense && tx.category != null && tx.category!.isNotEmpty) {
+      if (tx.type == TransactionType.expense &&
+          tx.category != null &&
+          tx.category!.isNotEmpty) {
         result[tx.category!] = (result[tx.category!] ?? 0) + tx.amount;
       }
     }
@@ -1492,11 +1630,17 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFCFAF6),
                       borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFFE7E1D6),
+                        width: 1,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.03),
@@ -1550,7 +1694,10 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFFCFAF6),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFFE7E1D6),
+                        width: 1,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.03),
@@ -1561,19 +1708,37 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                     ),
                     child: Column(
                       children: [
-                        _summaryLine('Abgehoben', _totalWithdrawals(), valueColor: positiveColor),
+                        _summaryLine(
+                          'Abgehoben',
+                          _totalWithdrawals(),
+                          valueColor: positiveColor,
+                        ),
                         const SizedBox(height: 10),
-                        _summaryLine('Bar erhalten', _totalCashReceived(), valueColor: positiveColor),
+                        _summaryLine(
+                          'Bar erhalten',
+                          _totalCashReceived(),
+                          valueColor: positiveColor,
+                        ),
                         const SizedBox(height: 10),
-                        _summaryLine('Ausgegeben', totalExpenses, valueColor: mutedRed),
+                        _summaryLine(
+                          'Ausgegeben',
+                          totalExpenses,
+                          valueColor: mutedRed,
+                        ),
                         const SizedBox(height: 12),
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: balanceColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: balanceColor.withOpacity(0.22), width: 1),
+                            border: Border.all(
+                              color: balanceColor.withOpacity(0.22),
+                              width: 1,
+                            ),
                           ),
                           child: Row(
                             children: [
@@ -1606,13 +1771,19 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFFCFAF6),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFCAD9C8), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFFCAD9C8),
+                        width: 1,
+                      ),
                     ),
                     child: InkWell(
                       onTap: _copyMonthlyValues,
                       borderRadius: BorderRadius.circular(16),
                       child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -1651,7 +1822,10 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFFCFAF6),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFFE7E1D6),
+                        width: 1,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.03),
@@ -1671,17 +1845,25 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF243128).withOpacity(0.7),
+                                    color: const Color(
+                                      0xFF243128,
+                                    ).withOpacity(0.7),
                                   ),
                                 ),
                                 const SizedBox(height: 14),
                                 Container(
                                   width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 11,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF9F5EE),
                                     borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                                    border: Border.all(
+                                      color: const Color(0xFFE7E1D6),
+                                      width: 1,
+                                    ),
                                   ),
                                   child: Row(
                                     children: [
@@ -1722,16 +1904,22 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                           .toList(),
                                       colors: List<Color>.generate(
                                         orderedCategoryExpenses.length,
-                                        (index) => _categoryPalette[index % _categoryPalette.length],
+                                        (index) =>
+                                            _categoryPalette[index %
+                                                _categoryPalette.length],
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              ...List.generate(orderedCategoryExpenses.length, (index) {
+                              ...List.generate(orderedCategoryExpenses.length, (
+                                index,
+                              ) {
                                 final entry = orderedCategoryExpenses[index];
-                                final color = _categoryPalette[index % _categoryPalette.length];
+                                final color =
+                                    _categoryPalette[index %
+                                        _categoryPalette.length];
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: Row(
@@ -1741,7 +1929,9 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                         height: 10,
                                         decoration: BoxDecoration(
                                           color: color,
-                                          borderRadius: BorderRadius.circular(3),
+                                          borderRadius: BorderRadius.circular(
+                                            3,
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(width: 10),
@@ -1771,11 +1961,17 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                               const SizedBox(height: 2),
                               Container(
                                 width: double.infinity,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 11,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF9F5EE),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: const Color(0xFFE7E1D6), width: 1),
+                                  border: Border.all(
+                                    color: const Color(0xFFE7E1D6),
+                                    width: 1,
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
@@ -1812,7 +2008,10 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
     );
   }
 
-  Widget _monthButton({required IconData icon, required VoidCallback onPressed}) {
+  Widget _monthButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF9F5EE),
@@ -1896,7 +2095,11 @@ class _ExpenseDonutPainter extends CustomPainter {
     }
 
     final innerPaint = Paint()..color = const Color(0xFFFCFAF6);
-    canvas.drawCircle(rect.center, (size.width - strokeWidth * 2.1) / 2, innerPaint);
+    canvas.drawCircle(
+      rect.center,
+      (size.width - strokeWidth * 2.1) / 2,
+      innerPaint,
+    );
   }
 
   @override
@@ -1941,14 +2144,12 @@ class BargeldBackup {
       throw const FormatException('Das Backup ist ungültig.');
     }
 
-    final transactions = (json['transactions'] as List)
-        .map((item) {
-          if (item is! Map<String, dynamic>) {
-            throw const FormatException('Das Backup enthält ungültige Einträge.');
-          }
-          return KaufTransaction.fromJson(item);
-        })
-        .toList();
+    final transactions = (json['transactions'] as List).map((item) {
+      if (item is! Map<String, dynamic>) {
+        throw const FormatException('Das Backup enthält ungültige Einträge.');
+      }
+      return KaufTransaction.fromJson(item);
+    }).toList();
 
     return BargeldBackup(
       formatVersion: json['formatVersion'] as int,
@@ -1983,6 +2184,69 @@ class BargeldBackupManager {
     final backup = BargeldBackup.fromJson(decoded);
     return [...backup.transactions];
   }
+}
+
+class MonthlyCarryoverManager {
+  static List<KaufTransaction> reconcile(
+    List<KaufTransaction> transactions, {
+    DateTime? now,
+  }) {
+    final regularTransactions = transactions
+        .where((tx) => tx.type != TransactionType.carryover)
+        .toList();
+    if (regularTransactions.isEmpty) {
+      return regularTransactions;
+    }
+
+    final firstMonth = _monthOf(
+      regularTransactions
+          .map((tx) => tx.date)
+          .reduce((earlier, date) => date.isBefore(earlier) ? date : earlier),
+    );
+    final lastTransactionMonth = _monthOf(
+      regularTransactions
+          .map((tx) => tx.date)
+          .reduce((later, date) => date.isAfter(later) ? date : later),
+    );
+    final currentMonth = _monthOf(now ?? DateTime.now());
+    final lastMonth = !lastTransactionMonth.isAfter(currentMonth)
+        ? currentMonth
+        : DateTime(lastTransactionMonth.year, lastTransactionMonth.month + 1);
+
+    final generatedCarryovers = <KaufTransaction>[];
+    var month = firstMonth;
+    var balance = 0.0;
+    while (!month.isAfter(lastMonth)) {
+      if (month != firstMonth && balance != 0) {
+        generatedCarryovers.add(
+          KaufTransaction(
+            id: 'carryover-${month.year}-${month.month.toString().padLeft(2, '0')}',
+            type: TransactionType.carryover,
+            amount: balance,
+            date: month,
+            note: null,
+            category: null,
+            createdAt: month,
+          ),
+        );
+      }
+
+      balance =
+          (month == firstMonth ? 0.0 : balance) +
+          regularTransactions
+              .where((tx) => _monthOf(tx.date) == month)
+              .fold<double>(0, (sum, tx) {
+                return tx.type == TransactionType.expense
+                    ? sum - tx.amount
+                    : sum + tx.amount;
+              });
+      month = DateTime(month.year, month.month + 1);
+    }
+
+    return [...regularTransactions, ...generatedCarryovers];
+  }
+
+  static DateTime _monthOf(DateTime date) => DateTime(date.year, date.month);
 }
 
 class KaufTransaction {
@@ -2029,4 +2293,4 @@ class KaufTransaction {
   }
 }
 
-enum TransactionType { withdrawal, cashReceived, expense }
+enum TransactionType { withdrawal, cashReceived, expense, carryover }
