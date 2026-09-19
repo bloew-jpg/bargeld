@@ -48,6 +48,24 @@ void main() {
     expect(find.text('Einnahme'), findsOneWidget);
     expect(find.text(currentMonthName()), findsOneWidget);
     expect(find.text('Buchungen'), findsOneWidget);
+    expect(tester.widget<Text>(find.text('0,00 €')).style?.color, appText);
+  });
+
+  testWidgets('Positive balance amount uses the positive color', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const BargeldApp());
+
+    await tester.tap(find.text('Einnahme'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '10.00');
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<Text>(find.text('10,00 €')).style?.color,
+      appPositive,
+    );
   });
 
   test('backup serialization round-trips transaction data', () {
@@ -384,7 +402,7 @@ void main() {
     expect(find.text('Gesamt'), findsOneWidget);
   });
 
-  testWidgets('Negative balances render the balance card in red', (
+  testWidgets('Negative balances keep the balance card neutral', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const BargeldApp());
@@ -405,7 +423,11 @@ void main() {
       find.byKey(const Key('balance-card')),
     );
     final decoration = balanceCard.decoration as BoxDecoration;
-    expect(decoration.color, Colors.red);
+    expect(decoration.color, appSurfaceMuted);
+    expect(
+      tester.widget<Text>(find.text('-10,00 €')).style?.color,
+      appExpense,
+    );
   });
 
   testWidgets('Editing and deleting a transaction updates the list', (

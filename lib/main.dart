@@ -6,6 +6,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'backup_io.dart';
 
+const appBackground = Color(0xFFF3F4F6);
+const appSurface = Color(0xFFFFFFFF);
+const appSurfaceMuted = Color(0xFFE9ECF0);
+const appText = Color(0xFF252A31);
+const appBorder = Color(0xFFD8DDE4);
+const appPrimary = Color(0xFF7D2637);
+const appPrimarySoft = Color(0xFFF4E6E9);
+const appExpense = Color(0xFFB23A48);
+const appPositive = Color(0xFF3E6B57);
+const appSystem = Color(0xFF68717D);
+
 const List<String> expenseCategories = [
   'Grundversorgung',
   'Gesundheit',
@@ -40,8 +51,40 @@ class BargeldApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Bargeld',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2F8F3A)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: appPrimary,
+          brightness: Brightness.light,
+          surface: appSurface,
+          error: appExpense,
+        ),
         useMaterial3: true,
+        scaffoldBackgroundColor: appBackground,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: appBackground,
+          foregroundColor: appText,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: appSurface,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: appSurface,
+          labelStyle: const TextStyle(color: appSystem),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: appBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: appPrimary, width: 1.5),
+          ),
+        ),
       ),
       home: const HomePage(),
     );
@@ -209,7 +252,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   Color get _balanceColor {
-    return _bargeldbestand >= 0 ? const Color(0xFF3E6A50) : Colors.red;
+    if (_bargeldbestand > 0) {
+      return appPositive;
+    }
+    if (_bargeldbestand < 0) {
+      return appExpense;
+    }
+    return appText;
   }
 
   String euro(double wert) {
@@ -750,7 +799,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F2EA),
+      backgroundColor: appBackground,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -789,7 +838,7 @@ class _HomePageState extends State<HomePage> {
                             fontSize: 12,
                             letterSpacing: 3.2,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF243128),
+                            color: appText,
                           ),
                         ),
                       ),
@@ -882,68 +931,51 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: _balanceColor,
+        color: appSurfaceMuted,
         borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: appBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(
-            right: -6,
-            bottom: -8,
-            child: IgnorePointer(
-              child: Opacity(
-                opacity: 0.2,
-                child: Image.asset(
-                  'assets/images/balance_branch.png',
-                  width: 138,
-                  fit: BoxFit.contain,
-                ),
+          Text(
+            'Aktueller Bargeldbestand',
+            style: TextStyle(
+              fontSize: 13,
+              letterSpacing: 1.0,
+              fontWeight: FontWeight.w600,
+              color: appText.withOpacity(0.68),
+            ),
+          ),
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              euro(_bargeldbestand),
+              style: TextStyle(
+                color: _balanceColor,
+                fontSize: 42,
+                fontWeight: FontWeight.w700,
+                height: 1.0,
               ),
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Aktueller Bargeldbestand',
-                style: TextStyle(
-                  fontSize: 13,
-                  letterSpacing: 1.0,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withOpacity(0.88),
-                ),
-              ),
-              const SizedBox(height: 10),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  euro(_bargeldbestand),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 42,
-                    fontWeight: FontWeight.w700,
-                    height: 1.0,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                _currentMonthYear,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.86),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          const SizedBox(height: 10),
+          Text(
+            _currentMonthYear,
+            style: TextStyle(
+              color: appText.withOpacity(0.66),
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -955,10 +987,10 @@ class _HomePageState extends State<HomePage> {
     required String label,
     required VoidCallback onPressed,
   }) {
-    const backgroundColor = Color(0xFFFCFAF6);
-    const borderColor = Color(0xFFE1DDD3);
-    final iconColor = const Color(0xFF3E6A50);
-    const iconBackground = Color(0xFFE8EEE5);
+    const backgroundColor = appSurface;
+    const borderColor = appBorder;
+    const iconColor = appPrimary;
+    const iconBackground = appPrimarySoft;
 
     return Material(
       color: Colors.transparent,
@@ -975,7 +1007,7 @@ class _HomePageState extends State<HomePage> {
             border: Border.all(color: borderColor, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.035),
+                color: Colors.black.withOpacity(0.04),
                 blurRadius: 12,
                 offset: const Offset(0, 5),
               ),
@@ -1004,7 +1036,7 @@ class _HomePageState extends State<HomePage> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF243128),
+                  color: appText,
                 ),
               ),
             ],
@@ -1088,20 +1120,21 @@ class _TransactionsPageState extends State<TransactionsPage> {
   @override
   Widget build(BuildContext context) {
     final currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
-    final sortedTransactions = _transactions
-        .where(
-          (tx) =>
-              tx.date.year == _selectedMonth.year &&
-              tx.date.month == _selectedMonth.month,
-        )
-        .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    final sortedTransactions =
+        _transactions
+            .where(
+              (tx) =>
+                  tx.date.year == _selectedMonth.year &&
+                  tx.date.month == _selectedMonth.month,
+            )
+            .toList()
+          ..sort((a, b) => b.date.compareTo(a.date));
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Buchungen'),
-        backgroundColor: const Color(0xFFF6F2EA),
-        foregroundColor: const Color(0xFF243128),
+        backgroundColor: appBackground,
+        foregroundColor: appText,
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [
@@ -1109,13 +1142,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
             padding: const EdgeInsets.only(right: 8),
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFFCFAF6),
+                color: appSurface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE1DDD3), width: 1),
+                border: Border.all(color: appBorder, width: 1),
               ),
               child: PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, size: 20),
-                color: const Color(0xFFFCFAF6),
+                color: appSurface,
                 surfaceTintColor: Colors.transparent,
                 onSelected: (value) async {
                   if (value == 'backup_create') {
@@ -1139,7 +1172,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
         ],
       ),
-      backgroundColor: const Color(0xFFF6F2EA),
+      backgroundColor: appBackground,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -1170,7 +1203,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF243128),
+                            color: appText,
                           ),
                         ),
                       ),
@@ -1203,12 +1236,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                               vertical: 28,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFCFAF6),
+                              color: appSurface,
                               borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: const Color(0xFFE7E1D6),
-                                width: 1,
-                              ),
+                              border: Border.all(color: appBorder, width: 1),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.03),
@@ -1223,14 +1253,14 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                 Icon(
                                   Icons.receipt_long_rounded,
                                   size: 28,
-                                  color: Color(0xFF7D897E),
+                                  color: appSystem,
                                 ),
                                 SizedBox(height: 10),
                                 Text(
                                   'Noch keine Buchungen',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: Color(0xFF243128),
+                                    color: appText,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -1240,216 +1270,241 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           ),
                         )
                       : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
-                    itemCount: sortedTransactions.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final tx = sortedTransactions[index];
-                      final isExpense = tx.type == TransactionType.expense;
-                      final isCarryover = tx.type == TransactionType.carryover;
-                      final title = isExpense
-                          ? ((tx.category != null && tx.category!.isNotEmpty)
-                                ? tx.category!
-                                : 'Ausgabe')
-                          : isCarryover
-                          ? 'Übertrag Vormonat'
-                          : tx.type == TransactionType.withdrawal
-                          ? 'Abhebung'
-                          : 'Bar erhalten';
-                      final accentColor = isExpense
-                          ? const Color(0xFFB6534E)
-                          : isCarryover
-                          ? const Color(0xFF7D897E)
-                          : const Color(0xFF3E6A50);
-                      final icon = isExpense
-                          ? Icons.remove_circle_outline_rounded
-                          : isCarryover
-                          ? Icons.redo_rounded
-                          : tx.type == TransactionType.withdrawal
-                          ? Icons.account_balance_wallet_rounded
-                          : Icons.add_circle_outline_rounded;
-                      final subtitle = isExpense
-                          ? 'Ausgabe'
-                          : isCarryover
-                          ? 'Systemeintrag'
-                          : null;
+                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
+                          itemCount: sortedTransactions.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final tx = sortedTransactions[index];
+                            final isExpense =
+                                tx.type == TransactionType.expense;
+                            final isCarryover =
+                                tx.type == TransactionType.carryover;
+                            final title = isExpense
+                                ? ((tx.category != null &&
+                                          tx.category!.isNotEmpty)
+                                      ? tx.category!
+                                      : 'Ausgabe')
+                                : isCarryover
+                                ? 'Übertrag Vormonat'
+                                : tx.type == TransactionType.withdrawal
+                                ? 'Abhebung'
+                                : 'Bar erhalten';
+                            final accentColor = isExpense
+                                ? appExpense
+                                : isCarryover
+                                ? appSystem
+                                : appPositive;
+                            final icon = isExpense
+                                ? Icons.remove_circle_outline_rounded
+                                : isCarryover
+                                ? Icons.redo_rounded
+                                : tx.type == TransactionType.withdrawal
+                                ? Icons.account_balance_wallet_rounded
+                                : Icons.add_circle_outline_rounded;
+                            final subtitle = isExpense
+                                ? 'Ausgabe'
+                                : isCarryover
+                                ? 'Systemeintrag'
+                                : null;
 
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFCFAF6),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: const Color(0xFFE7E1D6),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.025),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: isCarryover
-                                ? null
-                                : () async {
-                                    await widget.onEditTransaction(tx);
-                                    if (mounted) {
-                                      setState(() {
-                                        _transactions = [
-                                          ...widget.transactions,
-                                        ];
-                                      });
-                                    }
-                                  },
-                            borderRadius: BorderRadius.circular(18),
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 34,
-                                    height: 34,
-                                    margin: const EdgeInsets.only(top: 2),
-                                    decoration: BoxDecoration(
-                                      color: accentColor.withOpacity(0.13),
-                                      borderRadius: BorderRadius.circular(11),
-                                    ),
-                                    child: Icon(
-                                      icon,
-                                      size: 18,
-                                      color: accentColor,
-                                    ),
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: appSurface,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: appBorder, width: 1),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.025),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
+                                ],
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: isCarryover
+                                      ? null
+                                      : () async {
+                                          await widget.onEditTransaction(tx);
+                                          if (mounted) {
+                                            setState(() {
+                                              _transactions = [
+                                                ...widget.transactions,
+                                              ];
+                                            });
+                                          }
+                                        },
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      12,
+                                      10,
+                                      8,
+                                      10,
+                                    ),
+                                    child: Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              child: Column(
+                                        Container(
+                                          width: 34,
+                                          height: 34,
+                                          margin: const EdgeInsets.only(top: 2),
+                                          decoration: BoxDecoration(
+                                            color: accentColor.withOpacity(
+                                              0.13,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              11,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            icon,
+                                            size: 18,
+                                            color: accentColor,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
                                                 crossAxisAlignment:
                                                     CrossAxisAlignment.start,
                                                 children: [
-                                                  Text(
-                                                    title,
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      fontSize: 15,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: Color(0xFF243128),
-                                                      height: 1.2,
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          title,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style:
+                                                              const TextStyle(
+                                                                fontSize: 15,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                                color: appText,
+                                                                height: 1.2,
+                                                              ),
+                                                        ),
+                                                        if (subtitle !=
+                                                            null) ...[
+                                                          const SizedBox(
+                                                            height: 1,
+                                                          ),
+                                                          Text(
+                                                            subtitle,
+                                                            style: TextStyle(
+                                                              fontSize: 12,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: appText
+                                                                  .withOpacity(
+                                                                    0.58,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ],
                                                     ),
                                                   ),
-                                                  if (subtitle != null) ...[
-                                                    const SizedBox(height: 1),
-                                                    Text(
-                                                      subtitle,
+                                                  const SizedBox(width: 10),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          top: 1,
+                                                        ),
+                                                    child: Text(
+                                                      _formatAmount(tx),
                                                       style: TextStyle(
-                                                        fontSize: 12,
+                                                        fontSize: 15,
                                                         fontWeight:
-                                                            FontWeight.w600,
-                                                        color: const Color(
-                                                          0xFF243128,
-                                                        ).withOpacity(0.58),
+                                                            FontWeight.w700,
+                                                        color: accentColor,
+                                                        height: 1.1,
                                                       ),
                                                     ),
-                                                  ],
+                                                  ),
                                                 ],
                                               ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                top: 1,
+                                              const SizedBox(height: 6),
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    _formatDate(tx.date),
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: appText
+                                                          .withOpacity(0.6),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              child: Text(
-                                                _formatAmount(tx),
-                                                style: TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: accentColor,
-                                                  height: 1.1,
+                                              if (tx.note != null &&
+                                                  tx.note!.isNotEmpty) ...[
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  tx.note!,
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: appText.withOpacity(
+                                                      0.68,
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
-                                            ),
-                                          ],
+                                              ],
+                                            ],
+                                          ),
                                         ),
-                                        const SizedBox(height: 6),
-                                        Row(
-                                          children: [
-                                            Text(
-                                              _formatDate(tx.date),
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: const Color(
-                                                  0xFF243128,
-                                                ).withOpacity(0.6),
-                                              ),
+                                        if (!isCarryover) ...[
+                                          const SizedBox(width: 4),
+                                          IconButton(
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            tooltip: 'Löschen',
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              size: 20,
                                             ),
-                                          ],
-                                        ),
-                                        if (tx.note != null &&
-                                            tx.note!.isNotEmpty) ...[
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            tx.note!,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: const Color(
-                                                0xFF243128,
-                                              ).withOpacity(0.68),
-                                            ),
+                                            color: appText.withOpacity(0.7),
+                                            onPressed: () async {
+                                              await widget.onDeleteTransaction(
+                                                tx,
+                                              );
+                                              if (mounted) {
+                                                setState(() {
+                                                  _transactions = [
+                                                    ...widget.transactions,
+                                                  ];
+                                                });
+                                              }
+                                            },
                                           ),
                                         ],
                                       ],
                                     ),
                                   ),
-                                  if (!isCarryover) ...[
-                                    const SizedBox(width: 4),
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      tooltip: 'Löschen',
-                                      icon: const Icon(Icons.delete, size: 20),
-                                      color: const Color(
-                                        0xFF243128,
-                                      ).withOpacity(0.7),
-                                      onPressed: () async {
-                                        await widget.onDeleteTransaction(tx);
-                                        if (mounted) {
-                                          setState(() {
-                                            _transactions = [
-                                              ...widget.transactions,
-                                            ];
-                                          });
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ],
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               ],
             ),
@@ -1472,14 +1527,14 @@ class MonthlyOverviewPage extends StatefulWidget {
 class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
   late DateTime _selectedMonth;
   static const List<Color> _categoryPalette = [
-    Color(0xFF3E6A50),
-    Color(0xFF5A7D67),
-    Color(0xFF7E9B82),
-    Color(0xFF9CAD8A),
-    Color(0xFFB3B089),
-    Color(0xFFA78F77),
-    Color(0xFF8E6E66),
-    Color(0xFF6A7F73),
+    Color(0xFF7D2637),
+    Color(0xFFA13E50),
+    Color(0xFFC85B68),
+    Color(0xFF8A6870),
+    Color(0xFF59616C),
+    Color(0xFF9AA1AA),
+    Color(0xFF6E7B88),
+    Color(0xFFD78A92),
   ];
 
   @override
@@ -1605,21 +1660,19 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
   Widget build(BuildContext context) {
     final orderedCategoryExpenses = _orderedCategoryExpenses();
     final totalExpenses = _totalExpenses();
-    final balanceColor = _balanceAtMonthEnd() >= 0
-        ? const Color(0xFF3E6A50)
-        : const Color(0xFFB6534E);
-    const positiveColor = Color(0xFF3E6A50);
-    const mutedRed = Color(0xFFB6534E);
+    final balanceColor = _balanceAtMonthEnd() >= 0 ? appPositive : appExpense;
+    const positiveColor = appPositive;
+    const mutedRed = appExpense;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Monatsübersicht'),
-        backgroundColor: const Color(0xFFF6F2EA),
-        foregroundColor: const Color(0xFF243128),
+        backgroundColor: appBackground,
+        foregroundColor: appText,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
-      backgroundColor: const Color(0xFFF6F2EA),
+      backgroundColor: appBackground,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -1635,12 +1688,9 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFCFAF6),
+                      color: appSurface,
                       borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: const Color(0xFFE7E1D6),
-                        width: 1,
-                      ),
+                      border: Border.all(color: appBorder, width: 1),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.03),
@@ -1669,7 +1719,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                             style: const TextStyle(
                               fontSize: 21,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF243128),
+                              color: appText,
                               height: 1.1,
                             ),
                           ),
@@ -1692,12 +1742,9 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                   Container(
                     padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFCFAF6),
+                      color: appSurface,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: const Color(0xFFE7E1D6),
-                        width: 1,
-                      ),
+                      border: Border.all(color: appBorder, width: 1),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.03),
@@ -1748,7 +1795,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF243128),
+                                    color: appText,
                                   ),
                                 ),
                               ),
@@ -1769,12 +1816,9 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                   const SizedBox(height: 14),
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFCFAF6),
+                      color: appSurface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFFCAD9C8),
-                        width: 1,
-                      ),
+                      border: Border.all(color: appBorder, width: 1),
                     ),
                     child: InkWell(
                       onTap: _copyMonthlyValues,
@@ -1790,7 +1834,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                             Icon(
                               Icons.content_copy_rounded,
                               size: 18,
-                              color: Color(0xFF3E6A50),
+                              color: appPrimary,
                             ),
                             SizedBox(width: 10),
                             Text(
@@ -1798,7 +1842,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF243128),
+                                color: appText,
                               ),
                             ),
                           ],
@@ -1813,19 +1857,16 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                       fontSize: 12,
                       letterSpacing: 2.1,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF243128).withOpacity(0.75),
+                      color: appText.withOpacity(0.75),
                     ),
                   ),
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFCFAF6),
+                      color: appSurface,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: const Color(0xFFE7E1D6),
-                        width: 1,
-                      ),
+                      border: Border.all(color: appBorder, width: 1),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.03),
@@ -1845,9 +1886,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                    color: const Color(
-                                      0xFF243128,
-                                    ).withOpacity(0.7),
+                                    color: appText.withOpacity(0.7),
                                   ),
                                 ),
                                 const SizedBox(height: 14),
@@ -1858,10 +1897,10 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                     vertical: 11,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF9F5EE),
+                                    color: appSurfaceMuted,
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
-                                      color: const Color(0xFFE7E1D6),
+                                      color: appBorder,
                                       width: 1,
                                     ),
                                   ),
@@ -1873,7 +1912,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w700,
-                                            color: Color(0xFF243128),
+                                            color: appText,
                                           ),
                                         ),
                                       ),
@@ -1882,7 +1921,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                         style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
-                                          color: Color(0xFF243128),
+                                          color: appText,
                                         ),
                                       ),
                                     ],
@@ -1941,7 +1980,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                           style: const TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
-                                            color: Color(0xFF243128),
+                                            color: appText,
                                           ),
                                         ),
                                       ),
@@ -1951,7 +1990,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                         style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
-                                          color: Color(0xFF243128),
+                                          color: appText,
                                         ),
                                       ),
                                     ],
@@ -1966,10 +2005,10 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                   vertical: 11,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF9F5EE),
+                                  color: appSurfaceMuted,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: const Color(0xFFE7E1D6),
+                                    color: appBorder,
                                     width: 1,
                                   ),
                                 ),
@@ -1981,7 +2020,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
-                                          color: Color(0xFF243128),
+                                          color: appText,
                                         ),
                                       ),
                                     ),
@@ -1990,7 +2029,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF243128),
+                                        color: appText,
                                       ),
                                     ),
                                   ],
@@ -2014,13 +2053,13 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF9F5EE),
+        color: appSurfaceMuted,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFCAD9C8), width: 1),
+        border: Border.all(color: appBorder, width: 1),
       ),
       child: IconButton(
         onPressed: onPressed,
-        icon: Icon(icon, color: const Color(0xFF3E6A50), size: 24),
+        icon: Icon(icon, color: appPrimary, size: 24),
         splashRadius: 20,
         constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       ),
@@ -2036,7 +2075,7 @@ class _MonthlyOverviewPageState extends State<MonthlyOverviewPage> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF243128),
+              color: appText,
             ),
           ),
         ),
@@ -2076,7 +2115,7 @@ class _ExpenseDonutPainter extends CustomPainter {
     );
 
     final backgroundPaint = Paint()
-      ..color = const Color(0xFFE6E0D6)
+      ..color = appBorder
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.butt;
@@ -2094,7 +2133,7 @@ class _ExpenseDonutPainter extends CustomPainter {
       startAngle += sweepAngle;
     }
 
-    final innerPaint = Paint()..color = const Color(0xFFFCFAF6);
+    final innerPaint = Paint()..color = appSurface;
     canvas.drawCircle(
       rect.center,
       (size.width - strokeWidth * 2.1) / 2,
